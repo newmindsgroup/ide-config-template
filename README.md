@@ -1,6 +1,6 @@
-# ai-agent-config-template
+# ide-config-template
 
-**A person-agnostic, cross-IDE starting configuration for AI coding agents.**
+**A person-agnostic, cross-IDE starting configuration for AI coding tools.**
 
 Drop this into any AI coding tool — **Claude Code, OpenAI Codex, Cursor, or Google Antigravity** — and your agent starts every task with a strong, opinionated baseline: a working-style spine, a four-pillar engineering mantra (Security · Stability · Reliability · Compliance), proportional rigor, attribution and versioning discipline, third-party-component vetting, data-handling rules, and truthfulness/escalation guardrails.
 
@@ -15,7 +15,7 @@ The core is a single **`AGENTS.md`** — the open [AGENTS.md](https://agents.md/
 1. **Identify which AI tool the user runs** (ask if unclear): Claude Code, Codex, Cursor, or Antigravity.
 2. **Get `AGENTS.md`** — either have them click **"Use this template"** on GitHub to create their own repo, or fetch the file directly:
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/newmindsgroup/ai-agent-config-template/main/AGENTS.md -o AGENTS.md
+   curl -fsSL https://raw.githubusercontent.com/newmindsgroup/ide-config-template/main/AGENTS.md -o AGENTS.md
    ```
 3. **Place it where their tool reads it:**
    | Tool | Where to put `AGENTS.md` |

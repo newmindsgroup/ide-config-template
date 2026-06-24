@@ -10,7 +10,7 @@
 #         ./update.sh path/to/AGENTS.md
 set -uo pipefail
 
-UPSTREAM="https://raw.githubusercontent.com/newmindsgroup/ai-agent-config-template/main/AGENTS.md"
+UPSTREAM="https://raw.githubusercontent.com/newmindsgroup/ide-config-template/main/AGENTS.md"
 LOCAL="${1:-AGENTS.md}"
 
 [ -f "$LOCAL" ] || { echo "No '$LOCAL' here. Run from your repo root or pass the path."; exit 1; }
