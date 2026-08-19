@@ -1,10 +1,15 @@
 # Agent Instructions
 
 <!--
-  Cross-IDE instruction spine using the AGENTS.md open standard (https://agents.md/) —
-  read natively by Claude Code, Codex, Cursor, and Antigravity, in every project and
-  by delegated subagents. Replace the {{PLACEHOLDERS}} below, delete what doesn't apply,
-  and add your own rules. Keep it high-signal — every line competes for the model's attention.
+  Cross-IDE instruction spine using the AGENTS.md open standard (https://agents.md/),
+  read natively by Codex, Cursor, and Antigravity, in every project and by delegated
+  subagents.
+
+  Claude Code reads `CLAUDE.md` rather than this file. The `CLAUDE.md` beside it imports
+  this one with `@AGENTS.md`, so both tools follow one source. Keep both files in place.
+
+  Replace the {{PLACEHOLDERS}} below, delete what doesn't apply, and add your own rules.
+  Keep it high-signal: every line competes for the model's attention.
 
   Setup: search this file for `{{` and replace each token. Then delete this comment.
 -->
