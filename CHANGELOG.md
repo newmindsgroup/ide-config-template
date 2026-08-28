@@ -9,6 +9,7 @@ notifications.
 - Required `--confirm` for apply and managed-block removal, added a safe managed-block removal command, and corrected disk-limited local tiers and Cursor fallback guidance.
 - Replaced the forceful Claude bootstrap adoption path with a clone-or-clean-update path that refuses to overwrite an existing unmanaged directory.
 - Added Windows, macOS, and Linux test coverage in GitHub Actions, a JSON profile schema, security policy, contributor guide, and terminal demo walkthrough.
+- Updated the template validation workflow actions to supported runtime-compatible major versions.
 
 ## v1.1.2. 2026-08-28
 

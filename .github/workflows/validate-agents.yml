@@ -1,5 +1,5 @@
 name: Validate Template
-# Version-Timestamp: 2026-08-28 12:00:00 AST
+# Version-Timestamp: 2026-08-28 12:15:00 AST
 
 # Guards the shared operating spine: confirms the SPINE markers are balanced and all
 # required sections are present, so an edit or an `update.sh` run can't silently break it.
@@ -16,7 +16,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check spine markers and required sections
         run: |
           f=AGENTS.md
@@ -58,8 +58,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Run wizard behavior tests
