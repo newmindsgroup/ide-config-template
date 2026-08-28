@@ -17,6 +17,8 @@ mcp-needs-auth-cache.json
 .last-cleanup
 .DS_Store
 **/node_modules/
+__pycache__/
+*.py[cod]
 
 # settings.local.json holds machine/personal overrides — keep it out of the shared template
 settings.local.json
