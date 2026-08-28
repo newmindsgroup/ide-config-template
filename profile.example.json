@@ -1,0 +1,26 @@
+{
+  "$schema": "./profile.schema.json",
+  "schema_version": 1,
+  "version_timestamp": "2026-08-28 10:00:00 AST",
+  "name": "Example team member",
+  "role": "developer",
+  "goals": [
+    "build reliable web applications",
+    "review changes before release"
+  ],
+  "stack": [
+    "TypeScript",
+    "Next.js"
+  ],
+  "privacy": "internal",
+  "ides": [
+    "codex",
+    "claude",
+    "cursor"
+  ],
+  "subscriptions": {
+    "chatgpt": true,
+    "claude": false,
+    "openrouter_free": false
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IDE Configuration Template Profile",
+  "description": "Non-secret local preferences used by scripts/ide-setup.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "version_timestamp": { "type": "string" },
+    "name": { "type": "string" },
+    "role": { "enum": ["developer", "designer", "writer", "product", "operations", "analyst", "general"] },
+    "goals": { "type": "array", "items": { "type": "string" } },
+    "stack": { "type": "array", "items": { "type": "string" } },
+    "privacy": { "enum": ["public", "internal", "confidential"] },
+    "ides": { "type": "array", "items": { "enum": ["codex", "claude", "cursor", "antigravity"] }, "uniqueItems": true },
+    "subscriptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "chatgpt": { "type": "boolean" },
+        "claude": { "type": "boolean" },
+        "gemini": { "type": "boolean" },
+        "cursor": { "type": "boolean" },
+        "openrouter_free": { "type": "boolean" }
+      }
+    }
+  }
+}

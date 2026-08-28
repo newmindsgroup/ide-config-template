@@ -1,4 +1,5 @@
-name: Validate AGENTS.md
+name: Validate Template
+# Version-Timestamp: 2026-08-28 12:00:00 AST
 
 # Guards the shared operating spine: confirms the SPINE markers are balanced and all
 # required sections are present, so an edit or an `update.sh` run can't silently break it.
@@ -6,9 +7,9 @@ name: Validate AGENTS.md
 
 on:
   push:
-    paths: ['AGENTS.md']
+    paths: ['AGENTS.md', 'README.md', 'docs/**', 'scripts/**', 'tests/**', '*.json', '.github/workflows/**']
   pull_request:
-    paths: ['AGENTS.md']
+    paths: ['AGENTS.md', 'README.md', 'docs/**', 'scripts/**', 'tests/**', '*.json', '.github/workflows/**']
   workflow_dispatch:
 
 jobs:
@@ -46,3 +47,20 @@ jobs:
             echo "AGENTS.md spine valid — markers balanced, all 11 sections present."
           fi
           exit "$miss"
+      - name: Verify public setup wizard
+        run: bash scripts/verify.sh
+
+  wizard-platforms:
+    name: Wizard on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run wizard behavior tests
+        run: python tests/test_ide_setup.py

@@ -20,6 +20,8 @@ mcp-needs-auth-cache.json
 
 # settings.local.json holds machine/personal overrides — keep it out of the shared template
 settings.local.json
+*.local.json
+.ide-config/
 
 # Projects: track only memory files, not transcripts/session data
 projects/*

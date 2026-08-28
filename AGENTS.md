@@ -1,5 +1,7 @@
 # Agent Instructions
 
+<!-- Version-Timestamp: 2026-08-28 12:00:00 AST -->
+
 <!--
   Cross-IDE instruction spine using the AGENTS.md open standard (https://agents.md/),
   read natively by Codex, Cursor, and Antigravity, in every project and by delegated
@@ -13,6 +15,33 @@
 
   Setup: search this file for `{{` and replace each token. Then delete this comment.
 -->
+
+## Using This Template to Configure a Team Member
+
+When a person asks to configure their AI environment from this repository, run `python3 scripts/ide-setup.py --scan` and then `python3 scripts/ide-setup.py --plan`. Explain the plan before making changes. Run `python3 scripts/ide-setup.py --apply --confirm` only with explicit approval.
+
+Never ask for, read, or store passwords, API keys, account tokens, browser cookies, or client data. Do not download models, enable paid APIs, or overwrite existing instructions. The wizard writes a marked managed block, creates backups, and generates manual ChatGPT and Claude web instructions.
+
+## LLM Routing and Fallback Implementation Intent
+
+Treat these requests as the same implementation intent: LLM routing, model routing, model selection, provider routing, AI routing, fallback strategy, model fallback, LLM fallback, multi-model setup, multi-model strategy, local-model fallback, local LLM setup, OpenRouter setup, token conservation, usage optimization, model budget, choosing the right model, or choosing the right effort or speed.
+
+The canonical goal is: implement a safe LLM routing and fallback strategy for this person and computer.
+
+When this intent appears, do not respond with disconnected model recommendations. Run or guide the routing-focused workflow:
+
+```bash
+python3 scripts/ide-setup.py --scan
+python3 scripts/ide-setup.py --plan --focus llm-routing
+```
+
+Explain the proposed local capacity tier, declared subscriptions, privacy boundary, deterministic-tool-first rule, default hosted route, premium-review route, free-only OpenRouter choice, and re-evaluation triggers. Apply the configuration only after explicit approval:
+
+```bash
+python3 scripts/ide-setup.py --apply --confirm --focus llm-routing
+```
+
+Keep the following hard boundaries: no automatic paid API fallback, no automatic local-model download, no OpenRouter unless explicitly selected, and no confidential data sent to an unapproved provider.
 
 ## Your Profile
 
