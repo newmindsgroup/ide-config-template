@@ -142,6 +142,7 @@ def test_apply_creates_reversible_local_outputs_and_does_not_overwrite_user_rule
                 {
                     "name": "Avery",
                     "role": "designer",
+                    "astra_available": True,
                     "goals": ["design and review interfaces"],
                     "privacy": "confidential",
                     "ides": ["codex", "claude", "cursor"],
@@ -155,6 +156,7 @@ def test_apply_creates_reversible_local_outputs_and_does_not_overwrite_user_rule
         assert result.returncode == 0, result.stderr
         assert "# Existing user instructions" in codex_agents.read_text()
         assert "IDE-CONFIG-TEMPLATE:START" in codex_agents.read_text()
+        assert "Astra, Medium effort, Standard speed" in codex_agents.read_text()
         assert (home / ".claude" / "CLAUDE.md").is_file()
         assert (workspace / ".cursor" / "rules" / "ide-config-template.mdc").is_file()
         manual = home / ".ide-config" / "manual"
@@ -187,6 +189,20 @@ def test_local_tier_is_limited_by_free_disk() -> None:
     assert module.local_tier(128, 5, True) == "none"
     assert module.local_tier(128, 20, True) == "light"
     assert module.local_tier(128, 130, True) == "full"
+
+
+def test_astra_requires_explicit_access_and_reaches_instructions() -> None:
+    module = wizard_module()
+    machine = {"recommended_local_tier": "none"}
+    profile = {"subscriptions": {"chatgpt": True}, "name": "Avery", "role": "developer", "goals": [], "stack": [], "privacy": "internal"}
+    assert "Astra" not in module.routing(profile, machine)["substantial_work"]
+    profile["astra_available"] = True
+    route = module.routing(profile, machine)
+    assert "Astra" in route["substantial_work"]
+    instruction = module.compact_instruction(profile, {"recommended_skills": [], "routing": route})
+    assert "Astra" in instruction
+    profile["subscriptions"] = {}
+    assert "Astra" not in module.routing(profile, machine)["substantial_work"]
 
 
 if __name__ == "__main__":

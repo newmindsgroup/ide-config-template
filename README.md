@@ -1,6 +1,6 @@
 # IDE Configuration Template
 
-Version-Timestamp: 2026-08-28 11:00:00 AST
+Version-Timestamp: 2026-09-04 17:52:06 AST
 
 A public, person-aware starting point for configuring AI coding tools and AI work habits. It helps each team member create a safe local setup for their role, computer, subscriptions, projects, and preferred IDEs.
 
@@ -110,6 +110,14 @@ The wizard writes only the files needed for the selected tools.
 | Personal routing guide | `~/.ide-config/manual/task-routing-guide.md` | Explains the person's recommended task-routing policy. |
 
 The wizard creates a timestamped backup before it changes an existing instruction file. Generated personal files stay under `~/.ide-config/` and are ignored by Git.
+
+## Astra and subscription capacity
+
+The interview asks whether Astra is actually selectable in the person's Codex account. A ChatGPT subscription alone does not establish access. The optional profile field `astra_available` defaults to `false`. With confirmed access, substantial work uses Astra Medium at Standard speed. Routine work remains on Terra or Luna when available. High effort is reserved for difficult or high-consequence work.
+
+The wizard generates instructions and recommendations. It does not poll quotas, execute model requests, or automatically switch an active session. When shared OpenAI capacity runs out, save the task state and continue through an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset shared allowance. OpenRouter remains an explicit free-only option.
+
+Before provider handoff, record the objective, acceptance criteria, changed files, decisions, checks, unresolved risks, and exact next action. Verify the working tree before resuming any partially completed operation.
 
 ## Routing and fallback strategy
 

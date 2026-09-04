@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-08-28 12:00:00 AST
+Version-Timestamp: 2026-09-04 17:52:06 AST
 """
 
 from __future__ import annotations
@@ -24,11 +24,11 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-08-28 12:00:00 AST"
+VERSION = "2026-09-04 17:52:06 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
-PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions"}
+PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions", "astra_available"}
 SUBSCRIPTION_FIELDS = {"chatgpt", "claude", "gemini", "cursor", "openrouter_free"}
 FOCUSES = {"general", "llm-routing"}
 LLM_ROUTING_GOAL = "Implement a safe LLM routing and fallback strategy for this person and computer."
@@ -122,7 +122,8 @@ def interview() -> dict[str, Any]:
         "cursor": choose("Cursor subscription available here? yes/no", yes_no, "no") == "yes",
         "openrouter_free": choose("Enable OpenRouter free-only for public or sanitized work? yes/no", yes_no, "no") == "yes",
     }
-    return {"name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions}
+    astra_available = subscriptions["chatgpt"] and choose("Have you confirmed Astra is selectable in your Codex account? yes/no", yes_no, "no") == "yes"
+    return {"name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available}
 
 
 def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
@@ -141,8 +142,10 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
     profile.setdefault("privacy", "internal")
     profile.setdefault("ides", [])
     profile.setdefault("subscriptions", {})
+    profile.setdefault("astra_available", False)
     if (
-        profile["role"] not in ROLES
+        not isinstance(profile["astra_available"], bool)
+        or profile["role"] not in ROLES
         or profile["privacy"] not in PRIVACY_LEVELS
         or not isinstance(profile["name"], str)
         or not isinstance(profile["schema_version"], int)
@@ -177,6 +180,11 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "default": "deterministic tools first, then the smallest safe route",
         "private_work": "local model when installed and suitable" if machine["recommended_local_tier"] != "none" else "approved subscription with minimized context",
         "hosted_default": hosted,
+        "substantial_work": "Astra, Medium effort, Standard speed" if subscriptions.get("chatgpt") and profile.get("astra_available", False) else "best suitable model confirmed in the available subscription; otherwise a suitable installed local model",
+        "routine_work": "Terra Medium for routine implementation; Luna Low for narrow hosted work, when available",
+        "high_consequence": "raise effort to High only when warranted; keep tests, browser checks and independent review",
+        "capacity_fallback": "On shared OpenAI quota exhaustion, checkpoint and use an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset allowance.",
+        "automation": "instruction and recommendation only; no quota polling, provider execution or automatic replay",
         "premium_review": "use an available subscription only for high-consequence synthesis or independent review",
         "openrouter": "free-only, public or sanitized work" if subscriptions.get("openrouter_free") else "disabled unless explicitly enabled",
         "paid_api_fallback": "never automatic",
@@ -232,6 +240,14 @@ Main stack or tools: {', '.join(profile['stack']) or 'varies by project'}.
 5. Before claiming work is complete, run the relevant tests or validation and report any gaps.
 6. For code and visual changes, validate real rendered behavior when applicable. For public content, ground facts and edit for the intended audience.
 
+## Routing
+
+Substantial work: {plan['routing']['substantial_work']}.
+Routine work: {plan['routing']['routine_work']}.
+High consequence: {plan['routing']['high_consequence']}.
+Capacity fallback: {plan['routing']['capacity_fallback']}
+Automation boundary: {plan['routing']['automation']}.
+
 ## Response contract
 
 State the recommended approach, assumptions, risks, and the next safe action. Ask only questions that would materially change the result. Never request credentials or expose secrets.
@@ -255,6 +271,8 @@ Evaluation: The answer is useful when it is accurate, specific, safe with data, 
 ```
 
 Routing note: {plan['routing']['default']}. {plan['routing']['openrouter']}.
+Codex preference: {plan['routing']['substantial_work']}. Web products use their own available model controls.
+Continuity: {plan['routing']['capacity_fallback']}
 """
 
 

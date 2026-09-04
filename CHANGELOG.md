@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 (2026-09-04)
+
+Version-Timestamp: 2026-09-04 17:52:06 AST
+
+- Ask for confirmed Astra access and generate task-specific routing instructions.
+- Distinguish quality escalation from shared subscription capacity fallback.
+- Explain checkpoint requirements and the limits of instruction-based routing.
+- Preserve older profiles and require no paid API.
+
 Versions of this template. To pull the latest operating spine into your own copy
 without losing your customizations, run `./update.sh`. Watch/star the repo for release
 notifications.

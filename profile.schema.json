@@ -8,6 +8,7 @@
     "schema_version": { "type": "integer", "const": 1 },
     "version_timestamp": { "type": "string" },
     "name": { "type": "string" },
+    "astra_available": { "type": "boolean", "default": false, "description": "User confirmed Astra access in Codex. Not inferred from a subscription." },
     "role": { "enum": ["developer", "designer", "writer", "product", "operations", "analyst", "general"] },
     "goals": { "type": "array", "items": { "type": "string" } },
     "stack": { "type": "array", "items": { "type": "string" } },

@@ -1,6 +1,6 @@
 # LLM Routing and Fallback Implementation
 
-Version-Timestamp: 2026-08-28 11:20:00 AST
+Version-Timestamp: 2026-09-04 17:52:06 AST
 
 ## Canonical intent
 
@@ -51,6 +51,14 @@ python3 scripts/ide-setup.py --apply --confirm --focus llm-routing
 7. Never silently use a paid API as a fallback.
 
 Re-evaluate the route when scope expands, evidence conflicts, tests fail, the task needs a tool that the current route lacks, or the result becomes security-sensitive, client-facing, or production-bound.
+
+## Astra and continuity
+
+Confirm access separately from subscription ownership. Use `astra_available: true` in the JSON profile only after checking the account's model selector. Astra Medium Standard leads substantial work; Terra and Luna remain options for routine and narrow work. Raise effort to High when the consequence or difficulty warrants it.
+
+On quota exhaustion, preserve task state before changing providers. Do not replay partially completed writes automatically. An unavailable OpenAI allowance applies across affected OpenAI models; use an approved available Claude subscription or a suitable local model instead. Missing capacity must produce a clear stop rather than paid API usage.
+
+These are generated working instructions. Automatic quota detection and provider execution are not implemented by this public wizard.
 
 ## What the implementation produces
 
