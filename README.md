@@ -113,6 +113,14 @@ The wizard creates a timestamped backup before it changes an existing instructio
 
 ## Astra and subscription capacity
 
+Version-Timestamp: 2026-09-05 18:50:13 AST
+
+The interview also checks included Opus 5 and Fable 5.1 access and whether Claude extra usage is disabled. Each answer defaults to false and must be confirmed on the new computer. Meaningful coding, UI, UX and visual milestones use Opus 5 Medium for independent review when confirmed. Complex architecture, major design systems and persistent defects prefer Fable 5.1 High. Missing access leaves review pending or requires an explicitly approved substitute.
+
+The generated IDE and web instructions include the review evidence contract: actual checks, desktop/mobile screenshots and relevant interaction states, followed by resolving findings and rerunning checks. This also applies proportionately to consequential research, client deliverables, forecasts, strategy and automation. The wizard does not install a Claude runner, transfer account approval, execute a model or enforce Git merge rules.
+
+The optional GitHub Claude review workflow is disabled unless a maintainer separately enables the `SUBSCRIPTION_CLAUDE_REVIEW_ENABLED` repository variable after reviewing account billing and repository-data approval. It has no API-key fallback. The local wizard never enables this workflow or configures GitHub secrets.
+
 The interview asks whether Astra is actually selectable in the person's Codex account. A ChatGPT subscription alone does not establish access. The optional profile field `astra_available` defaults to `false`. With confirmed access, substantial work uses Astra Medium at Standard speed. Routine work remains on Terra or Luna when available. High effort is reserved for difficult or high-consequence work.
 
 The wizard generates instructions and recommendations. It does not poll quotas, execute model requests, or automatically switch an active session. When shared OpenAI capacity runs out, save the task state and continue through an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset shared allowance. OpenRouter remains an explicit free-only option.
