@@ -1,6 +1,10 @@
 {
   "$schema": "./profile.schema.json",
   "schema_version": 1,
+  "astra_available": false,
+  "opus_available": false,
+  "fable_available": false,
+  "claude_extra_usage_off": false,
   "version_timestamp": "2026-08-28 10:00:00 AST",
   "name": "Example team member",
   "role": "developer",

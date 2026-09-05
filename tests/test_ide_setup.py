@@ -26,6 +26,32 @@ def wizard_module():
     return module
 
 
+def test_review_requires_local_entitlement_confirmation():
+    module = wizard_module()
+    machine = {"recommended_local_tier": "none"}
+    profile = {"subscriptions": {"claude": True}}
+    assert "pending" in module.routing(profile, machine)["code_design_review"]
+    profile.update({"opus_available": True, "fable_available": True, "claude_extra_usage_off": True})
+    route = module.routing(profile, machine)
+    assert "Opus 5" in route["code_design_review"]
+    assert "Fable 5.1" in route["complex_review"]
+    profile["subscriptions"]["claude"] = False
+    assert "pending" in module.routing(profile, machine)["complex_review"]
+
+
+def test_new_review_fields_reject_non_boolean():
+    module = wizard_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "profile.json"
+        path.write_text(json.dumps({"fable_available": "yes"}))
+        try:
+            module.read_profile(path, False)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("String entitlement must be rejected")
+
+
 def run(*arguments: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(WIZARD), *arguments],

@@ -1,4 +1,5 @@
 name: Claude Code Review
+# Version-Timestamp: 2026-09-05 18:50:13 AST
 
 on:
   pull_request:
@@ -7,7 +8,7 @@ on:
 jobs:
   claude-review:
     # Same-repo, non-draft PRs only. Fork PRs have no secret access; drafts aren't ready.
-    if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
+    if: vars.SUBSCRIPTION_CLAUDE_REVIEW_ENABLED == 'true' && github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,13 +19,12 @@ jobs:
         id: key
         env:
           OAUTH: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          APIKEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if [ -n "$OAUTH" ] || [ -n "$APIKEY" ]; then
+          if [ -n "$OAUTH" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Claude review skipped::No Claude credential configured. Add CLAUDE_CODE_OAUTH_TOKEN (Pro/Max: run 'claude setup-token') or ANTHROPIC_API_KEY as a repo secret to enable automatic reviews."
+            echo "::notice title=Claude review skipped::No subscription credential configured. Keep disabled unless account entitlement, billing and repository data approval have been reviewed separately. Paid API fallback is not supported."
           fi
 
       - name: Checkout
@@ -38,7 +38,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}

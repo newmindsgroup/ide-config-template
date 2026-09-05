@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-09-04 17:52:06 AST
+Version-Timestamp: 2026-09-05 18:50:13 AST
 """
 
 from __future__ import annotations
@@ -24,11 +24,11 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-04 17:52:06 AST"
+VERSION = "2026-09-05 18:50:13 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
-PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions", "astra_available"}
+PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions", "astra_available", "opus_available", "fable_available", "claude_extra_usage_off"}
 SUBSCRIPTION_FIELDS = {"chatgpt", "claude", "gemini", "cursor", "openrouter_free"}
 FOCUSES = {"general", "llm-routing"}
 LLM_ROUTING_GOAL = "Implement a safe LLM routing and fallback strategy for this person and computer."
@@ -123,7 +123,10 @@ def interview() -> dict[str, Any]:
         "openrouter_free": choose("Enable OpenRouter free-only for public or sanitized work? yes/no", yes_no, "no") == "yes",
     }
     astra_available = subscriptions["chatgpt"] and choose("Have you confirmed Astra is selectable in your Codex account? yes/no", yes_no, "no") == "yes"
-    return {"name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available}
+    opus_available = subscriptions["claude"] and choose("Confirmed Opus 5 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
+    fable_available = subscriptions["claude"] and choose("Confirmed Fable 5.1 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
+    extra_off = subscriptions["claude"] and choose("Confirmed Claude extra usage and usage-credit billing disabled? yes/no", yes_no, "no") == "yes"
+    return {"name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available, "opus_available": opus_available, "fable_available": fable_available, "claude_extra_usage_off": extra_off}
 
 
 def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
@@ -143,8 +146,11 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
     profile.setdefault("ides", [])
     profile.setdefault("subscriptions", {})
     profile.setdefault("astra_available", False)
+    for field in ("opus_available", "fable_available", "claude_extra_usage_off"):
+        profile.setdefault(field, False)
     if (
         not isinstance(profile["astra_available"], bool)
+        or any(not isinstance(profile[field], bool) for field in ("opus_available", "fable_available", "claude_extra_usage_off"))
         or profile["role"] not in ROLES
         or profile["privacy"] not in PRIVACY_LEVELS
         or not isinstance(profile["name"], str)
@@ -167,6 +173,7 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
 
 def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
     subscriptions = profile["subscriptions"]
+    review_enabled = subscriptions.get("claude") and profile.get("claude_extra_usage_off", False)
     hosted = (
         "ChatGPT subscription"
         if subscriptions.get("chatgpt")
@@ -186,6 +193,10 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "capacity_fallback": "On shared OpenAI quota exhaustion, checkpoint and use an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset allowance.",
         "automation": "instruction and recommendation only; no quota polling, provider execution or automatic replay",
         "premium_review": "use an available subscription only for high-consequence synthesis or independent review",
+        "code_design_review": "Opus 5 Medium after real checks at meaningful code, UI, UX and visual milestones" if review_enabled and profile.get("opus_available") else "pending confirmed included reviewer access, billing and data approval; request an approved substitute",
+        "complex_review": "Fable 5.1 High for complex architecture, major design systems, persistent defects and difficult synthesis; review approach and completed milestone" if review_enabled and profile.get("fable_available") else "pending Fable access and billing confirmation; use confirmed Opus only as an explicitly recorded substitute",
+        "review_evidence": "requirements, changes and actual check results; desktop/mobile screenshots and changed interaction states for UI. Resolve findings and rerun checks. No model response is release approval.",
+        "review_scope": "also review consequential research, client deliverables, strategy, forecasts and automation; use proportionate source, calculation and human checks",
         "openrouter": "free-only, public or sanitized work" if subscriptions.get("openrouter_free") else "disabled unless explicitly enabled",
         "paid_api_fallback": "never automatic",
         "fast_mode": "only when the person explicitly prioritizes latency",
@@ -247,6 +258,10 @@ Routine work: {plan['routing']['routine_work']}.
 High consequence: {plan['routing']['high_consequence']}.
 Capacity fallback: {plan['routing']['capacity_fallback']}
 Automation boundary: {plan['routing']['automation']}.
+Code and design review: {plan['routing']['code_design_review']}.
+Complex review: {plan['routing']['complex_review']}.
+Review evidence: {plan['routing']['review_evidence']}
+Extended review: {plan['routing']['review_scope']}.
 
 ## Response contract
 
