@@ -24,7 +24,7 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-08 18:07:45 AST"
+VERSION = "2026-09-08 18:51:27 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
@@ -199,7 +199,7 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "review_scope": "also review consequential research, client deliverables, strategy, forecasts and automation; use proportionate source, calculation and human checks",
         "substantial_review": "Fable 5.1 Medium for substantial bounded synthesis across coding, design, content, planning and analysis; High for complex or consequential work. Opus 5 for smaller focused reviews." if review_enabled and profile.get("fable_available") else "Use only an explicitly confirmed included reviewer; keep review pending when unavailable.",
         "review_budget": "One reviewer per milestone; at most two attempts per phase, no duplicate unchanged evidence. Stop and checkpoint on persistent failure. This template supplies instructions, not an executable review counter.",
-        "context_budget": "Keep essential safety and project rules always loaded; load exact skills on demand. Store approved plans, decisions and checks in project files. Do not delete safeguards or move data to external memory without approval.",
+        "context_budget": "Keep essential safety and project rules always loaded; load exact skills on demand. Store approved plans, decisions and checks in project files. Do not delete safeguards or move data to external memory without approval. Reuse a short task brief, not a separate self-prompt. Use prompt-engineering-expert when installed for instruction deliverables, complex handoffs or demonstrated instruction-caused failures, not ordinary coding or tool errors. Refine once, then execute. Recommend Plan mode for unresolved consequential decisions or broad, costly-to-reverse changes; never claim prose switches modes. Resolve consequential decisions with the user before execution, regardless of mode. Planning grants no implementation or deployment authority. Neither planning nor refinement automatically raises effort or calls another model. Real checks remain required.",
         "measurement": "Record opaque task ID, model, effort, acceptance, elapsed time and repairs locally. Add approximate usage deltas only when known. Evaluate ten real tasks without duplicating paid work.",
         "openrouter": "free-only, public or sanitized work" if subscriptions.get("openrouter_free") else "disabled unless explicitly enabled",
         "paid_api_fallback": "never automatic",
