@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Behavior checks for the public team setup wizard.
 
-Version-Timestamp: 2026-08-28 10:00:00 AST
+Version-Timestamp: 2026-09-08 18:07:45 AST
 """
 
 from __future__ import annotations
@@ -182,7 +182,7 @@ def test_apply_creates_reversible_local_outputs_and_does_not_overwrite_user_rule
         assert result.returncode == 0, result.stderr
         assert "# Existing user instructions" in codex_agents.read_text()
         assert "IDE-CONFIG-TEMPLATE:START" in codex_agents.read_text()
-        assert "Astra, Medium effort, Standard speed" in codex_agents.read_text()
+        assert "Astra, Low effort, Standard speed" in codex_agents.read_text()
         assert (home / ".claude" / "CLAUDE.md").is_file()
         assert (workspace / ".cursor" / "rules" / "ide-config-template.mdc").is_file()
         manual = home / ".ide-config" / "manual"

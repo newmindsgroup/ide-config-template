@@ -1,6 +1,6 @@
 # Agent Instructions
 
-<!-- Version-Timestamp: 2026-08-28 12:00:00 AST -->
+<!-- Version-Timestamp: 2026-09-08 18:07:45 AST -->
 
 <!--
   Cross-IDE instruction spine using the AGENTS.md open standard (https://agents.md/),
@@ -56,7 +56,7 @@ Keep the following hard boundaries: no automatic paid API fallback, no automatic
 ## Working Style — applies to every task, every project, including subagents
 
 ### Skill & Command Leverage Protocol
-- Before starting any task, check available skills, slash commands, agents, and MCP tools for a fit. If there's even a small chance one applies, invoke it.
+- For substantive work, use a clearly matching skill. Do not invoke speculative or overlapping skills. Deterministic tasks need no skill unless a specific safety boundary requires one.
 - Announce what you're using and why ("Using `X` because…") so I learn the inventory passively — never make me memorize it.
 - Prefer an existing skill or agent over improvising. If a capability gap appears, suggest the `find-skills` skill to look for an installable one.
 - When a slash command would serve me better than a chat request (e.g. `/code-review`, `/security-review`), name it so I can reach for it next time.
