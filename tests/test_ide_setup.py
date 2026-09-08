@@ -231,6 +231,19 @@ def test_astra_requires_explicit_access_and_reaches_instructions() -> None:
     assert "Astra" not in module.routing(profile, machine)["substantial_work"]
 
 
+def test_selective_prompt_planning_instructions():
+    module = wizard_module()
+    profile = {"subscriptions": {}, "goals": [], "name": "Tester", "role": "developer", "stack": [], "privacy": "internal"}
+    route = module.routing(profile, {"recommended_local_tier": "none"})
+    instruction = module.compact_instruction(profile, {"recommended_skills": [], "routing": route})
+    for term in ("Refine once, then execute", "not ordinary coding or tool errors",
+                 "Planning grants no implementation or deployment authority",
+                 "Neither planning nor refinement automatically raises effort"):
+        assert term in instruction
+        for platform in ("ChatGPT", "Claude"):
+            assert term in module.web_instruction(profile, {"routing": route}, platform)
+
+
 if __name__ == "__main__":
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_")]
     for test in tests:

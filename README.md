@@ -1,6 +1,8 @@
 # IDE Configuration Template
 
-Version-Timestamp: 2026-09-08 18:07:45 AST
+Version-Timestamp: 2026-09-08 18:51:27 AST
+
+Generated IDE and web instructions include selective prompt-refinement and planning guidance: clear tasks execute directly, instruction problems get one refinement pass, and unresolved consequential decisions warrant planning. This does not install a prompt skill or switch app modes. See [routing efficiency](docs/routing-efficiency.md).
 
 Latest routing update: confirmed Astra access now starts at Low/Standard, with evidence-based escalation, bounded Fable/Opus review guidance, on-demand skills and local outcome measurement. See [routing efficiency](docs/routing-efficiency.md) for behavior and limits.
 

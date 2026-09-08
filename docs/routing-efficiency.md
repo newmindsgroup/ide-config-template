@@ -1,6 +1,16 @@
 # Efficient routing on your computer
 
-Version-Timestamp: 2026-09-08 18:07:45 AST
+Version-Timestamp: 2026-09-08 18:51:27 AST
+
+## Selective prompt refinement and planning
+
+For substantial work, establish a short task brief: outcome, constraints, relevant evidence and acceptance checks. Reuse clear requirements; do not create a separate self-prompt by default.
+
+Use `prompt-engineering-expert` for prompts/instructions as deliverables, complex bounded handoffs, conflicting requirements needing an execution contract, or evidence of instruction-caused failure. Ordinary coding, design, writing or tool failures alone do not trigger it. Refine once, then execute; revisit only for changed requirements or demonstrated misunderstanding. Preserve intent, privacy and authorization.
+
+Recommend Plan mode for unresolved consequential decisions, broad cross-system changes or costly-to-reverse work. Clear bounded tasks proceed directly; a short checklist needs no mode switch. Never claim prose changed the app mode. Planning grants no implementation or deployment authority.
+
+Resolve consequential decisions with the user before execution, regardless of mode. Neither refinement nor planning automatically raises effort, calls another model or replaces real checks. These are agent-followed rules, not a guaranteed runtime interceptor.
 
 The wizard recommends Astra Low and Standard only when you confirm access. Raise effort when task difficulty, failed attempts or consequence justify it. Availability and subscriptions are destination-specific.
 
