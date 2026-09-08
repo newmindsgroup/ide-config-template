@@ -1,6 +1,6 @@
 # LLM Routing and Fallback Implementation
 
-Version-Timestamp: 2026-09-04 17:52:06 AST
+Version-Timestamp: 2026-09-08 18:07:45 AST
 
 ## Canonical intent
 
@@ -54,7 +54,7 @@ Re-evaluate the route when scope expands, evidence conflicts, tests fail, the ta
 
 ## Astra and continuity
 
-Confirm access separately from subscription ownership. Use `astra_available: true` in the JSON profile only after checking the account's model selector. Astra Medium Standard leads substantial work; Terra and Luna remain options for routine and narrow work. Raise effort to High when the consequence or difficulty warrants it.
+Confirm access separately from subscription ownership. Use `astra_available: true` in the JSON profile only after checking the account's model selector. Astra Low Standard is the starting route; Terra and Luna remain options for routine and narrow work. Raise effort to Medium or High when evidence, consequence or difficulty warrants it. See [routing efficiency](routing-efficiency.md).
 
 On quota exhaustion, preserve task state before changing providers. Do not replay partially completed writes automatically. An unavailable OpenAI allowance applies across affected OpenAI models; use an approved available Claude subscription or a suitable local model instead. Missing capacity must produce a clear stop rather than paid API usage.
 

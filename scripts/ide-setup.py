@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-09-05 18:50:13 AST
+Version-Timestamp: 2026-09-08 18:07:45 AST
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-05 18:50:13 AST"
+VERSION = "2026-09-08 18:07:45 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
@@ -187,7 +187,7 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "default": "deterministic tools first, then the smallest safe route",
         "private_work": "local model when installed and suitable" if machine["recommended_local_tier"] != "none" else "approved subscription with minimized context",
         "hosted_default": hosted,
-        "substantial_work": "Astra, Medium effort, Standard speed" if subscriptions.get("chatgpt") and profile.get("astra_available", False) else "best suitable model confirmed in the available subscription; otherwise a suitable installed local model",
+        "substantial_work": "Astra, Low effort, Standard speed; raise to Medium or High on evidence or consequence" if subscriptions.get("chatgpt") and profile.get("astra_available", False) else "best suitable model confirmed in the available subscription; otherwise a suitable installed local model",
         "routine_work": "Terra Medium for routine implementation; Luna Low for narrow hosted work, when available",
         "high_consequence": "raise effort to High only when warranted; keep tests, browser checks and independent review",
         "capacity_fallback": "On shared OpenAI quota exhaustion, checkpoint and use an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset allowance.",
@@ -197,6 +197,10 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "complex_review": "Fable 5.1 High for complex architecture, major design systems, persistent defects and difficult synthesis; review approach and completed milestone" if review_enabled and profile.get("fable_available") else "pending Fable access and billing confirmation; use confirmed Opus only as an explicitly recorded substitute",
         "review_evidence": "requirements, changes and actual check results; desktop/mobile screenshots and changed interaction states for UI. Resolve findings and rerun checks. No model response is release approval.",
         "review_scope": "also review consequential research, client deliverables, strategy, forecasts and automation; use proportionate source, calculation and human checks",
+        "substantial_review": "Fable 5.1 Medium for substantial bounded synthesis across coding, design, content, planning and analysis; High for complex or consequential work. Opus 5 for smaller focused reviews." if review_enabled and profile.get("fable_available") else "Use only an explicitly confirmed included reviewer; keep review pending when unavailable.",
+        "review_budget": "One reviewer per milestone; at most two attempts per phase, no duplicate unchanged evidence. Stop and checkpoint on persistent failure. This template supplies instructions, not an executable review counter.",
+        "context_budget": "Keep essential safety and project rules always loaded; load exact skills on demand. Store approved plans, decisions and checks in project files. Do not delete safeguards or move data to external memory without approval.",
+        "measurement": "Record opaque task ID, model, effort, acceptance, elapsed time and repairs locally. Add approximate usage deltas only when known. Evaluate ten real tasks without duplicating paid work.",
         "openrouter": "free-only, public or sanitized work" if subscriptions.get("openrouter_free") else "disabled unless explicitly enabled",
         "paid_api_fallback": "never automatic",
         "fast_mode": "only when the person explicitly prioritizes latency",
@@ -262,6 +266,10 @@ Code and design review: {plan['routing']['code_design_review']}.
 Complex review: {plan['routing']['complex_review']}.
 Review evidence: {plan['routing']['review_evidence']}
 Extended review: {plan['routing']['review_scope']}.
+Substantial review: {plan['routing']['substantial_review']}
+Review budget: {plan['routing']['review_budget']}
+Context budget: {plan['routing']['context_budget']}
+Measurement: {plan['routing']['measurement']}
 
 ## Response contract
 
@@ -283,6 +291,10 @@ Context: Default data sensitivity is {profile['privacy']}. Ask before using an e
 Requirements: Use deterministic checks before reasoning when possible. Give a direct recommendation first. State assumptions, risks, and validation steps. Use the smallest safe level of effort. Do not claim tests or external facts were verified unless you actually verified them.
 Output: Provide an actionable answer, then concise next steps. For implementation, include validation commands. For public-facing content, identify audience and fact gaps first.
 Evaluation: The answer is useful when it is accurate, specific, safe with data, and clear about what remains unverified.
+Routing: {plan['routing']['substantial_work']}. Web controls differ from Codex; never claim these instructions switch a model automatically.
+Context: {plan['routing']['context_budget']}
+Review: {plan['routing']['substantial_review']} {plan['routing']['review_budget']}
+Measurement: {plan['routing']['measurement']}
 ```
 
 Routing note: {plan['routing']['default']}. {plan['routing']['openrouter']}.
