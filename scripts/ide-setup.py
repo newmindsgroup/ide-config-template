@@ -5,12 +5,14 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-09-16 15:29:00 AST
+Version-Timestamp: 2026-09-16 16:02:15 AST
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
+import hashlib
 import os
 import stat
 import tempfile
@@ -28,7 +30,7 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-16 15:19:14 AST"
+VERSION = "2026-09-16 16:02:15 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
@@ -129,7 +131,7 @@ def interview() -> dict[str, Any]:
 
 
 def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
-    profile = interview() if interactive else json.loads(path.read_text()) if path else None
+    profile = interview() if interactive else json.loads(path.read_text(encoding="utf-8")) if path else None
     if not isinstance(profile, dict):
         raise ValueError("Provide --profile for non-interactive use, or omit it for the guided interview.")
     unsupported = set(profile) - PROFILE_FIELDS
@@ -365,9 +367,11 @@ def merged_content(path: Path, block: str, cursor: bool = False) -> bytes:
     span = marker_span(original)
     if span:
         return (original[:span[0]] + block + original[span[1]:]).encode("utf-8")
-    if cursor and path.exists():
-        raise ValueError("Existing Cursor rule is not managed by this template; choose manual setup")
     header = "---\ndescription: Portable operating rules\nalwaysApply: true\n---\n\n" if cursor else ""
+    if cursor and path.exists():
+        if original != header:
+            raise ValueError("Existing Cursor rule is not managed by this template; choose manual setup")
+        original = ""  # Exact empty scaffold left by our removal can be reused.
     return (header + block + original).encode("utf-8")
 
 
@@ -387,7 +391,7 @@ def atomic_write(path: Path, data: bytes, mode: int) -> None:
             os.unlink(temporary)
 
 
-def commit_changes(changes: dict[Path, bytes], home: Path) -> list[Path]:
+def commit_changes(changes: dict[Path, bytes], home: Path, expected_hashes: dict[Path, str | None] | None = None) -> list[Path]:
     """Preflight every path, save private recovery copies, rollback ordinary failures.
 
     Not a cross-file power-loss transaction. Run without concurrent editors.
@@ -400,6 +404,8 @@ def commit_changes(changes: dict[Path, bytes], home: Path) -> list[Path]:
     for path, data in changes.items():
         safe_path(path)
         before = path.read_bytes() if path.exists() else None
+        if expected_hashes is not None and (hashlib.sha256(before).hexdigest() if before is not None else None) != expected_hashes[path]:
+            raise ValueError("Destination changed after preview; no writes performed")
         if before != data:
             snapshots[path] = (before, stat.S_IMODE(path.stat().st_mode) if before is not None else 0o600)
     if not snapshots:
@@ -441,51 +447,196 @@ def commit_changes(changes: dict[Path, bytes], home: Path) -> list[Path]:
     return written
 
 
-def instruction_targets(profile: dict[str, Any], home: Path, workspace: Path | None) -> list[tuple[Path, bool]]:
+def app_roots(home: Path, overrides: dict[str, Path] | None = None, use_env: bool | None = None, selected: list[str] | None = None) -> dict[str, Path]:
+    if use_env is None:
+        use_env = home == Path.home().resolve()
+    overrides = overrides or {}
+    roots = {}
+    for ide, folder, variable in (("codex", ".codex", "CODEX_HOME"), ("claude", ".claude", "CLAUDE_CONFIG_DIR")):
+        if selected is not None and ide not in selected:
+            roots[ide] = home / folder
+            continue
+        chosen = overrides.get(ide) or (os.environ.get(variable) if use_env else None) or home / folder
+        candidate = Path(chosen).expanduser()
+        if not candidate.is_absolute():
+            raise ValueError(f"{variable} or its explicit override must be an absolute directory")
+        roots[ide] = anchor(candidate)
+    roots["antigravity"] = home / ".gemini"
+    return roots
+
+
+def instruction_targets(profile: dict[str, Any], home: Path, workspace: Path | None,
+                        roots: dict[str, Path] | None = None) -> list[tuple[Path, bool]]:
+    roots = roots or app_roots(home, selected=profile["ides"])
     targets = []
-    for ide, relative in (("codex", ".codex/AGENTS.md"), ("claude", ".claude/CLAUDE.md"), ("antigravity", ".gemini/GEMINI.md")):
+    for ide, filename in (("codex", "AGENTS.md"), ("claude", "CLAUDE.md"), ("antigravity", "GEMINI.md")):
         if ide in profile["ides"]:
-            targets.append((home / relative, False))
+            targets.append((roots[ide] / filename, False))
     if "cursor" in profile["ides"] and workspace:
         targets.append((workspace / ".cursor/rules/ide-config-template.mdc", True))
     return targets
 
 
-def planned_changes(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None) -> dict[Path, bytes]:
+def adapter_for(path: Path) -> str | None:
+    if path.name == "ide-config-template.mdc" and path.parent.name == "rules" and path.parent.parent.name == ".cursor":
+        return "cursor"
+    return {"AGENTS.md": "codex", "CLAUDE.md": "claude", "GEMINI.md": "antigravity"}.get(path.name)
+
+
+def validate_entry(entry: Any) -> Path:
+    if not isinstance(entry, dict) or set(entry) != {"path", "adapter"} or not isinstance(entry["path"], str):
+        raise ValueError("Invalid installation record entry")
+    path = Path(entry["path"])
+    if not path.is_absolute() or ".." in path.parts or adapter_for(path) != entry["adapter"] or entry["adapter"] not in IDE_NAMES:
+        raise ValueError("Invalid installation record destination")
+    if anchor(path.parent) / path.name != path:
+        raise ValueError("Installation record destination must be canonical")
+    return safe_path(path)
+
+
+def installations(home: Path) -> dict[Path, str]:
+    """Read local state without writing. Recover old default adapters from backups."""
+    registry = safe_path(home / ".ide-config/installations.json")
+    records = {}
+    if registry.exists():
+        value = json.loads(registry.read_text(encoding="utf-8"))
+        if not isinstance(value, dict) or value.get("schema_version") != 1 or type(value.get("schema_version")) is not int or not isinstance(value.get("destinations"), list):
+            raise ValueError("Invalid installation record; preserve it and recover manually")
+        if value.get("installation_home") != str(home):
+            raise ValueError("Installation record belongs to another home. Do not copy runtime state between computers.")
+        for entry in value["destinations"]:
+            path = validate_entry(entry)
+            if path in records:
+                raise ValueError("Duplicate installation record destination")
+            records[path] = entry["adapter"]
+        return records
+    # Older releases had no registry. Only old default adapter layouts are adopted.
+    # In particular, a spine updater's arbitrary AGENTS.md is never an app target.
+    candidates = {home / ".codex/AGENTS.md", home / ".claude/CLAUDE.md", home / ".gemini/GEMINI.md"}
+    backups = home / ".ide-config/backups"
+    safe_path(backups / "placeholder")
+    if backups.exists():
+        for manifest in sorted(backups.glob("*/manifest.json")):
+            safe_path(manifest)
+            value = json.loads(manifest.read_text(encoding="utf-8"))
+            if not isinstance(value, dict) or not isinstance(value.get("files"), list):
+                raise ValueError("Invalid legacy backup manifest; recover manually")
+            for item in value["files"]:
+                if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+                    raise ValueError("Invalid legacy backup destination")
+                candidate = Path(item["path"])
+                if adapter_for(candidate) == "cursor" or candidate in candidates:
+                    validate_entry({"path": str(candidate), "adapter": adapter_for(candidate)})
+                    candidates.add(candidate)
+    for path in sorted(candidates):
+        # Discovery never follows links in unused default app locations. Selected
+        # destinations and explicit records are still strictly rejected above.
+        if any(item.is_symlink() for item in [path, *path.parents]):
+            continue
+        safe_path(path)
+        if path.exists() and marker_span(path.read_bytes().decode("utf-8")):
+            records[path] = adapter_for(path)
+    return records
+
+
+def registry_bytes(records: dict[Path, str], home: Path) -> bytes:
+    value = {"schema_version": 1, "version_timestamp": VERSION, "installation_home": str(home),
+             "destinations": [{"path": str(path), "adapter": records[path]} for path in sorted(records)]}
+    return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode()
+
+
+def planned_changes(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None,
+                    roots: dict[str, Path] | None = None) -> dict[Path, bytes]:
     root = home / ".ide-config"
     manual = root / "manual"
+    records = installations(home)
+    # Capacity readings are ephemeral. Do not rewrite persisted files or invalidate
+    # an approved diff solely because free disk changed between plan and apply.
+    saved_plan = {key: value for key, value in plan.items() if key != "machine"}
     changes = {
         root / "profile.local.json": (json.dumps(profile, indent=2, sort_keys=True) + "\n").encode(),
-        root / "plan.json": (json.dumps(plan, indent=2, sort_keys=True) + "\n").encode(),
+        root / "plan.json": (json.dumps(saved_plan, indent=2, sort_keys=True) + "\n").encode(),
         manual / "chatgpt-custom-instructions.md": web_instruction(profile, plan, "ChatGPT").encode(),
         manual / "claude-web-project-instructions.md": web_instruction(profile, plan, "Claude").encode(),
         manual / "task-routing-guide.md": ("# Personal Task Routing Guide\n\nVersion-Timestamp: " + VERSION + "\n\n" + json.dumps(plan["routing"], indent=2) + "\n").encode(),
     }
-    for path, cursor in instruction_targets(profile, home, workspace):
+    for path, cursor in instruction_targets(profile, home, workspace, roots):
         changes[path] = merged_content(path, managed_block(profile, plan), cursor)
+        records[path] = adapter_for(path)
     if "cursor" in profile["ides"] and not workspace:
         changes[manual / "cursor-user-rules.md"] = compact_instruction(profile, plan).encode()
+    # State is written last, in the same rollback boundary as instructions.
+    changes[root / "installations.json"] = registry_bytes(records, home)
     for path in changes:
         safe_path(path)
     safe_path(root / "backups/placeholder")
     return changes
 
 
-def apply(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None) -> list[Path]:
-    home, workspace = anchor(home), anchor(workspace) if workspace else None
-    return commit_changes(planned_changes(profile, plan, home, workspace), home)
-
-
-def remove_managed_blocks(profile: dict[str, Any], home: Path, workspace: Path | None) -> list[Path]:
-    home, workspace = anchor(home), anchor(workspace) if workspace else None
+def removal_changes(profile: dict[str, Any], home: Path, workspace: Path | None,
+                    roots: dict[str, Path] | None = None) -> dict[Path, bytes]:
+    records = installations(home)
+    for path, _ in instruction_targets(profile, home, workspace, roots):
+        records[path] = adapter_for(path)
     changes = {}
-    for path, _ in instruction_targets(profile, home, workspace):
+    for path in sorted(records):
         safe_path(path)
         original = path.read_bytes().decode("utf-8") if path.exists() else ""
         span = marker_span(original)
         if span:
             changes[path] = (original[:span[0]] + original[span[1]:]).encode("utf-8")
-    return commit_changes(changes, home)
+    registry = home / ".ide-config/installations.json"
+    if changes or registry.exists():
+        changes[registry] = registry_bytes({}, home)
+    return changes
+
+
+def preview_changes(changes: dict[Path, bytes], operation: str) -> dict[str, Any]:
+    entries = []
+    for path, after in sorted(changes.items()):
+        safe_path(path)
+        before = path.read_bytes() if path.exists() else None
+        diff = "".join(difflib.unified_diff(
+            (before or b"").decode("utf-8").splitlines(keepends=True),
+            after.decode("utf-8").splitlines(keepends=True),
+            fromfile=str(path) + " (before)", tofile=str(path) + " (after)"))
+        entries.append({"path": str(path), "action": "unchanged" if before == after else "create" if before is None else "update",
+                        "before_sha256": hashlib.sha256(before).hexdigest() if before is not None else None,
+                        "after_sha256": hashlib.sha256(after).hexdigest(), "diff": diff})
+    bound = {"operation": operation, "files": [{key: value for key, value in entry.items() if key != "diff"} for entry in entries]}
+    return {"operation": operation, "planned_files": [str(path) for path in changes], "changes": entries,
+            "plan_sha256": hashlib.sha256(json.dumps(bound, sort_keys=True).encode()).hexdigest(),
+            "privacy_notice": "Diffs include existing local instructions. Keep this preview private."}
+
+
+def commit_reviewed(changes: dict[Path, bytes], home: Path, operation: str, expected: str | None = None) -> list[Path]:
+    preview = preview_changes(changes, operation)
+    if expected is not None and (len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected) or expected != preview["plan_sha256"]):
+        raise ValueError("Reviewed plan does not match current changes. Preview again before applying.")
+    before_hashes = {Path(entry["path"]): entry["before_sha256"] for entry in preview["changes"]}
+    return commit_changes(changes, home, before_hashes)
+
+
+def apply(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None,
+          roots: dict[str, Path] | None = None, expected: str | None = None) -> list[Path]:
+    home, workspace = anchor(home), anchor(workspace) if workspace else None
+    return commit_reviewed(planned_changes(profile, plan, home, workspace, roots), home, "apply", expected)
+
+
+def remove_managed_blocks(profile: dict[str, Any], home: Path, workspace: Path | None,
+                          roots: dict[str, Path] | None = None, expected: str | None = None) -> list[Path]:
+    home, workspace = anchor(home), anchor(workspace) if workspace else None
+    return commit_reviewed(removal_changes(profile, home, workspace, roots), home, "remove", expected)
+
+
+def installation_status(home: Path) -> dict[str, Any]:
+    rows = []
+    for path, adapter in installations(home).items():
+        safe_path(path)
+        state = "missing" if not path.exists() else "present" if marker_span(path.read_bytes().decode("utf-8")) else "block_missing"
+        rows.append({"path": str(path), "adapter": adapter, "state": state})
+    return {"destinations": rows, "app_loading_verified": False,
+            "next_step": "Start each app and verify its instruction sources. This checks files only."}
 
 
 def main() -> int:
@@ -493,15 +644,27 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--scan", action="store_true", help="print non-secret machine capability information")
     mode.add_argument("--plan", action="store_true", help="print recommendations without writing files")
+    mode.add_argument("--plan-remove", action="store_true", help="preview removal from all tracked destinations without writing")
+    mode.add_argument("--status", action="store_true", help="check tracked instruction files without launching apps")
     mode.add_argument("--apply", action="store_true", help="write approved local configuration and prompt packs")
     mode.add_argument("--remove-managed-block", action="store_true", help="remove only this template's marked instruction blocks")
     parser.add_argument("--profile", type=Path, help="non-secret JSON profile for plan or non-interactive apply")
     parser.add_argument("--focus", choices=sorted(FOCUSES), default="general", help="limit the plan to a named implementation goal")
-    parser.add_argument("--home", type=Path, default=Path.home(), help="home directory to configure")
+    parser.add_argument("--home", type=Path, help="home directory to configure")
+    parser.add_argument("--codex-home", type=Path, help="explicit Codex configuration directory")
+    parser.add_argument("--claude-home", type=Path, help="explicit Claude Code configuration directory")
+    parser.add_argument("--expect-plan-sha256", help="require the exact hash printed by plan or plan-remove")
     parser.add_argument("--workspace", type=Path, help="workspace where a Cursor rule may be created")
     parser.add_argument("--non-interactive", action="store_true", help="require --profile instead of asking questions")
     parser.add_argument("--confirm", action="store_true", help="confirm a requested write or managed-block removal")
     args = parser.parse_args()
+    explicit_home = args.home is not None
+    args.home = anchor(args.home or Path.home())
+    workspace = anchor(args.workspace) if args.workspace else None
+    if args.status:
+        status = installation_status(args.home)
+        print(json.dumps(status, indent=2))
+        return 1 if any(row["state"] != "present" for row in status["destinations"]) else 0
     machine = scan()
     if args.scan:
         print(json.dumps(machine, indent=2, sort_keys=True))
@@ -509,30 +672,36 @@ def main() -> int:
     if (args.apply or args.remove_managed_block) and not args.confirm:
         print("ERROR - --apply and --remove-managed-block require --confirm after reviewing the plan.", file=sys.stderr)
         return 2
-    if args.remove_managed_block and args.profile is None:
-        args.profile = args.home / ".ide-config" / "profile.local.json"
+    if (args.remove_managed_block or args.plan_remove) and args.profile is None:
+        saved = args.home / ".ide-config" / "profile.local.json"
+        args.profile = saved if saved.exists() else None
     try:
-        profile = read_profile(args.profile, not args.non_interactive and args.profile is None)
+        profile = {"ides": []} if (args.remove_managed_block or args.plan_remove) and args.profile is None else read_profile(args.profile, not args.non_interactive and args.profile is None)
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"ERROR - {error}", file=sys.stderr)
         return 2
+    roots = app_roots(args.home, {key: value for key, value in {"codex": args.codex_home, "claude": args.claude_home}.items() if value is not None}, use_env=not explicit_home, selected=profile["ides"])
+    if args.plan_remove:
+        print(json.dumps(preview_changes(removal_changes(profile, args.home, workspace, roots), "remove"), indent=2))
+        return 0
+    if args.remove_managed_block:
+        outputs = remove_managed_blocks(profile, args.home, workspace, roots, args.expect_plan_sha256)
+        for output in outputs:
+            print(f"UPDATED - {output}")
+        print("BACKUPS - " + str(args.home / ".ide-config" / "backups"))
+        return 0
     plan = make_plan(profile, machine, args.focus)
     if args.plan:
         try:
-            changes = planned_changes(profile, plan, anchor(args.home), anchor(args.workspace) if args.workspace else None)
-            plan["planned_files"] = [str(path) for path in changes]
+            changes = planned_changes(profile, plan, args.home, workspace, roots)
+            plan.update(preview_changes(changes, "apply"))
+            plan["tracked_destinations"] = [str(path) for path in installations(args.home)]
         except (OSError, ValueError) as error:
             print(f"ERROR - {error}", file=sys.stderr)
             return 2
         print(json.dumps(plan, indent=2, sort_keys=True))
         return 0
-    if args.remove_managed_block:
-        outputs = remove_managed_blocks(profile, args.home, args.workspace)
-        for output in outputs:
-            print(f"REMOVED - managed block from {output}")
-        print(f"BACKUPS - {args.home / '.ide-config' / 'backups'}")
-        return 0
-    outputs = apply(profile, plan, args.home, args.workspace)
+    outputs = apply(profile, plan, args.home, workspace, roots, args.expect_plan_sha256)
     print("APPLIED - local personalized AI configuration")
     for output in outputs:
         print(f"WROTE - {output}")
