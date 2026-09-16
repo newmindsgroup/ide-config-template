@@ -1,8 +1,20 @@
 # Changelog
 
+## 1.5.0 (2026-09-16)
+
+Version-Timestamp: 2026-09-16 16:02:15 AST
+
+- Track configured destinations across profiles and Cursor workspaces; preview and remove all tracked blocks explicitly.
+- Support selected app home overrides and isolate explicit home rehearsals from environment overrides.
+- Preview exact diffs and bind apply/removal to a reviewed content hash when supplied.
+- Add read-only file status, legacy adoption, machine-local registry checks and reinstallation coverage.
+- Verify source archives natively on Windows, macOS and Linux with Python 3.10 and 3.12 CI.
+- Add pinned Gitleaks scans and a stable release-checks gate.
+- Document per-computer setup, optional skills, native Codex evidence and remaining app acceptance checks.
+
 ## 1.4.0 (2026-09-16)
 
-Version-Timestamp: 2026-09-16 15:27:25 AST
+Version-Timestamp: 2026-09-16 16:02:15 AST
 
 - Preserve existing instruction bytes, refuse ambiguous markers and linked targets, and recover from ordinary write failures.
 - Back up every changed file with a private recovery manifest.

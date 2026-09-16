@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version-Timestamp: 2026-09-16 15:27:25 AST
+# Version-Timestamp: 2026-09-16 16:02:15 AST
 """Check publishable files for prohibited paths and recognizable secret patterns.
 
 This limited regression check does not replace staged-diff or history review.
@@ -10,20 +10,30 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BLOCKED_PARTS = {'.codex', '.claude', '.cursor', '.ide-config', 'projects', 'sessions', 'transcripts'}
+BLOCKED_PARTS = {'.codex', '.claude', '.cursor', '.gemini', '.ide-config', 'projects', 'sessions', 'transcripts'}
 BLOCKED_NAMES = {'auth.json', 'credentials.json', 'profile.json'}
 PATTERNS = [
     re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
     re.compile(rb'\bgh[pousr]_[A-Za-z0-9]{30,}\b'),
+    re.compile(rb'\bgithub_pat_[A-Za-z0-9_]{40,}\b'),
     re.compile(rb'\bAKIA[A-Z0-9]{16}\b'),
     re.compile(rb'\bsk-[A-Za-z0-9_-]{32,}\b'),
     re.compile(rb'/Users/[A-Za-z0-9._-]+/'),
+    re.compile(rb'/home/[A-Za-z0-9._-]+/'),
+    re.compile(rb'[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\'),
 ]
 
 def main():
-    result = subprocess.run(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], cwd=ROOT, capture_output=True, check=True)
+    if (ROOT / '.git').exists():
+        result = subprocess.run(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], cwd=ROOT, capture_output=True, check=True)
+        names = set(result.stdout.decode('utf-8').split('\0')) - {''}
+    else:
+        # Source archives have no Git metadata. Inspect every distributed path,
+        # including hidden runtime directories, while excluding generated caches.
+        names = {str(path.relative_to(ROOT)) for path in ROOT.rglob('*')
+                 if not {'.git', '__pycache__'}.intersection(path.relative_to(ROOT).parts)}
     failures = []
-    for name in set(result.stdout.decode('utf-8').split('\0')) - {''}:
+    for name in names:
         path = ROOT / name
         parts = Path(name).parts
         if path.is_symlink():

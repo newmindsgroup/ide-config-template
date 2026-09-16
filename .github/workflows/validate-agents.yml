@@ -1,9 +1,5 @@
 name: Validate Template
-# Version-Timestamp: 2026-09-16 15:27:25 AST
-
-# Guards the shared operating spine: confirms the SPINE markers are balanced and all
-# required sections are present, so an edit or an `update.sh` run can't silently break it.
-# No secrets needed. Template-generated repos inherit this check automatically.
+# Version-Timestamp: 2026-09-16 16:02:15 AST
 
 on:
   push:
@@ -14,62 +10,37 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
-      - name: Check spine markers and required sections
-        run: |
-          f=AGENTS.md
-          [ -f "$f" ] || { echo "::error::AGENTS.md not found"; exit 1; }
-          s=$(grep -c '^<!-- SPINE:START' "$f" || true)
-          e=$(grep -c '^<!-- SPINE:END' "$f" || true)
-          if [ "$s" != "1" ] || [ "$e" != "1" ]; then
-            echo "::error::Expected exactly one SPINE:START and one SPINE:END marker (found start=$s end=$e)"; exit 1
-          fi
-          miss=0
-          while IFS= read -r sec; do
-            [ -z "$sec" ] && continue
-            if ! grep -qF "$sec" "$f"; then echo "::error::Missing required spine section: $sec"; miss=1; fi
-          done <<'SECTIONS'
-          Skill & Command Leverage Protocol
-          Qualifying Questions Protocol
-          Engineering Mantra
-          Proportional Rigor
-          Attribution & Versioned Outputs
-          Third-Party Component Trust
-          Data Handling
-          Truthfulness & Escalation
-          Look Around the Corner
-          Skill-Worthiness Radar
-          Next Steps & Sequenced Building
-          SECTIONS
-          if [ "$miss" = "0" ]; then
-            echo "AGENTS.md spine valid: markers balanced, all 11 sections present."
-          fi
-          exit "$miss"
-      - name: Verify public setup wizard
-        run: bash scripts/verify.sh
-
   wizard-platforms:
-    name: Wizard on ${{ matrix.os }}
+    name: Python ${{ matrix.python }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ['3.10', '3.12']
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
-          python-version: '3.12'
-      - name: Run wizard behavior tests
-        run: python tests/test_ide_setup.py
-      - name: Run preservation tests
-        run: python tests/test_safe_setup.py
-      - name: Run update helper tests
-        run: python tests/test_update_helpers.py
+          python-version: ${{ matrix.python }}
+      - name: Run all portable checks and test scripts
+        run: python scripts/verify.py
+
+  secret-scan:
+    uses: ./.github/workflows/secret-scan.yml
+
+  release-checks:
+    name: release-checks
+    if: always()
+    needs: [wizard-platforms, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every platform and secret scan to pass
+        env:
+          PLATFORM_RESULT: ${{ needs.wizard-platforms.result }}
+          SECRET_RESULT: ${{ needs.secret-scan.result }}
+        run: |
+          test "$PLATFORM_RESULT" = success
+          test "$SECRET_RESULT" = success

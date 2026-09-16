@@ -1,6 +1,6 @@
 # Personalized Team Setup and Recovery
 
-Version-Timestamp: 2026-09-16 15:27:25 AST
+Version-Timestamp: 2026-09-16 16:02:15 AST
 
 Use the [README setup sequence](../README.md#start-here) with one saved non-secret profile. Planning reads only the selected instruction targets and basic machine capabilities. It does not inspect credentials, customer data or browser sessions. An apply creates local outputs and backups only after `--apply --confirm`.
 
@@ -8,7 +8,7 @@ Use the [README setup sequence](../README.md#start-here) with one saved non-secr
 
 1. Review the source and profile. Confirm app selection, workspace and available subscriptions.
 2. Close editors modifying the affected files. Review `planned_files` and existing instructions for policy conflicts.
-3. Keep custom app homes, managed company settings and remote environments on a manual setup path. The wizard only targets default locations under the selected home.
+3. Review custom app homes carefully. Environment overrides are supported for selected Codex and Claude Code apps; explicit app-home flags take precedence. An explicit --home suppresses environment overrides. Managed company policies and remote environments still require local review.
 4. Use `--home /absolute/disposable/home` and a disposable workspace to rehearse without touching live configuration.
 5. Apply with exactly the reviewed profile and workspace. Start a fresh app session and check loaded instructions.
 
@@ -18,10 +18,11 @@ Backups live under `~/.ide-config/backups/<timestamp>-<unique-id>/`. Each run ha
 
 Ordinary write failures trigger automatic rollback. A process interruption or power loss may require manual recovery. Stop edits, inspect the manifest, compare each current file against its backup and preserve any later user changes before restoring. Never execute a manifest as a script. Do not delete a new file merely because a manifest marks it new if it now contains useful work.
 
-For ordinary removal, use the same app selection and original workspace:
+For ordinary removal, preview all tracked destinations, including earlier app selections and Cursor workspaces:
 
 ```bash
-python3 scripts/ide-setup.py --remove-managed-block --confirm --profile ~/.ide-config/profile.local.json --workspace /absolute/path/to/project
+python3 scripts/ide-setup.py --plan-remove
+python3 scripts/ide-setup.py --remove-managed-block --confirm --expect-plan-sha256 HASH_FROM_REMOVAL_PLAN
 ```
 
 This removes only marked instruction blocks and creates backups of changed files. Other instructions, existing configuration and installed skills remain. Cursor frontmatter or empty instruction files may remain.

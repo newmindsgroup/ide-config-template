@@ -30,6 +30,7 @@ projects/
 .codex/
 .claude/
 .cursor/
+.gemini/
 .env
 .env.*
 !.env.example
