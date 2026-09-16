@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 (2026-09-16)
+
+Version-Timestamp: 2026-09-16 15:27:25 AST
+
+- Preserve existing instruction bytes, refuse ambiguous markers and linked targets, and recover from ordinary write failures.
+- Back up every changed file with a private recovery manifest.
+- Replace unsafe bootstrap and remote updater behavior with a new-directory clone and preview-first local-source updates.
+- Remove automatic hooks and the optional secret-bearing review workflow.
+- Recommend only six pinned public reusable skills; bundle no company or private skills.
+- Expand preservation tests, public-content checks and team onboarding documentation.
+
 ## 1.3.0 (2026-09-04)
 
 Version-Timestamp: 2026-09-04 17:52:06 AST

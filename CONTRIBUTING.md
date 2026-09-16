@@ -21,3 +21,9 @@ Add behavior tests for every change to `scripts/ide-setup.py`. Update the README
 ## Releases
 
 Use a versioned changelog entry. Verify the GitHub Actions matrix before publishing a release. Public documentation should state what the tool does, what it does not do, and what requires manual approval.
+
+## Public release review
+
+Version-Timestamp: 2026-09-16 15:27:25 AST
+
+Inspect every staged file for private instructions, personal profiles, company workflows, customer data and credentials before publishing. The automated public-content check covers only recognizable patterns and prohibited paths; it is not a full secret or history audit. Keep real evidence and backups outside this public repository. Existing runtime settings must remain untouched.

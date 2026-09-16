@@ -5,12 +5,16 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-09-08 18:07:45 AST
+Version-Timestamp: 2026-09-16 15:29:00 AST
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import stat
+import tempfile
+import uuid
 import json
 from pathlib import Path
 import platform
@@ -24,7 +28,7 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-08 18:51:27 AST"
+VERSION = "2026-09-16 15:19:14 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
@@ -33,15 +37,10 @@ SUBSCRIPTION_FIELDS = {"chatgpt", "claude", "gemini", "cursor", "openrouter_free
 FOCUSES = {"general", "llm-routing"}
 LLM_ROUTING_GOAL = "Implement a safe LLM routing and fallback strategy for this person and computer."
 
-ROLE_SKILLS = {
-    "developer": ["test-driven-development", "systematic-debugging", "verification-before-completion"],
-    "designer": ["visual-and-code-quality-gate", "accessibility-compliance-accessibility-audit"],
-    "writer": ["content-development", "copy-editing", "content-quality-gate"],
-    "product": ["brainstorming", "writing-plans", "acceptance-orchestrator"],
-    "operations": ["agentic-actions-auditor", "acceptance-orchestrator"],
-    "analyst": ["data-analysis", "advanced-evaluation"],
-    "general": ["verification-before-completion"],
-}
+CATALOG_PATH = Path(__file__).resolve().parents[1] / "approved-skills.json"
+CATALOG = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+ROLE_SKILLS = CATALOG["roles"]
+
 
 
 def command_exists(name: str) -> bool:
@@ -50,8 +49,8 @@ def command_exists(name: str) -> bool:
 
 def command_output(*command: str) -> str | None:
     try:
-        return subprocess.check_output(command, text=True, stderr=subprocess.DEVNULL).strip()
-    except (OSError, subprocess.CalledProcessError):
+        return subprocess.check_output(command, text=True, stderr=subprocess.DEVNULL, timeout=5).strip()
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None
 
 
@@ -151,10 +150,13 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
     if (
         not isinstance(profile["astra_available"], bool)
         or any(not isinstance(profile[field], bool) for field in ("opus_available", "fable_available", "claude_extra_usage_off"))
+        or not isinstance(profile["role"], str)
         or profile["role"] not in ROLES
+        or not isinstance(profile["privacy"], str)
         or profile["privacy"] not in PRIVACY_LEVELS
         or not isinstance(profile["name"], str)
-        or not isinstance(profile["schema_version"], int)
+        or type(profile["schema_version"]) is not int
+        or profile["schema_version"] != 1
         or not isinstance(profile["version_timestamp"], str)
         or not isinstance(profile["goals"], list)
         or not isinstance(profile["stack"], list)
@@ -168,6 +170,9 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
         or not all(isinstance(value, bool) for value in profile["subscriptions"].values())
     ):
         raise ValueError("Profile contains an unsupported value.")
+    for value in [profile["name"], profile["version_timestamp"], *profile["goals"], *profile["stack"]]:
+        if len(value) > 2000 or any(token in value for token in ("<!--", "-->", "\x00")):
+            raise ValueError("Profile text contains reserved delimiters or exceeds the size limit.")
     return profile
 
 
@@ -217,6 +222,7 @@ def make_plan(profile: dict[str, Any], machine: dict[str, Any], focus: str) -> d
         "profile": {key: profile[key] for key in ("name", "role", "goals", "stack", "privacy", "ides")},
         "machine": {key: machine[key] for key in ("platform", "architecture", "ram_gb", "free_disk_gb", "tools", "recommended_local_tier")},
         "recommended_skills": ROLE_SKILLS[role],
+        "skill_catalog": {"source": CATALOG["source"], "policy": "recommendations only; no installation or removal", "skills": [entry for entry in CATALOG["skills"] if entry["name"] in ROLE_SKILLS[role]]},
         "routing": routing(profile, machine),
         "install_actions": {
             "codex": "managed AGENTS.md block" if "codex" in profile["ides"] else "manual prompt pack only",
@@ -236,7 +242,7 @@ def make_plan(profile: dict[str, Any], machine: dict[str, Any], focus: str) -> d
 
 def compact_instruction(profile: dict[str, Any], plan: dict[str, Any]) -> str:
     goals = ", ".join(profile["goals"]) or "reliable work"
-    skills = ", ".join(plan["recommended_skills"])
+    skills = ", ".join(plan["recommended_skills"]) or "none required by this role; use the approved catalog only when relevant"
     return f"""# Personalized AI Working Instructions
 
 Version-Timestamp: {VERSION}
@@ -251,7 +257,7 @@ Main stack or tools: {', '.join(profile['stack']) or 'varies by project'}.
 1. Start with deterministic checks, search, tests, formatting, and builds when they answer the question.
 2. Treat {profile['privacy']} material as the default data boundary. Do not send it to an unapproved external provider.
 3. Select the smallest safe model route. Do not enable paid API fallback or fast mode automatically.
-4. Use a relevant skill only when it supplies a concrete method. Suggested skills: {skills}.
+4. Use a relevant skill only when it supplies a concrete method. Suggested skills: {skills}. These are optional recommendations, not installed or automatically authorized. Review the pinned public catalog; keep project-specific and private skills within approved project boundaries.
 5. Before claiming work is complete, run the relevant tests or validation and report any gaps.
 6. For code and visual changes, validate real rendered behavior when applicable. For public content, ground facts and edit for the intended audience.
 
@@ -307,111 +313,179 @@ def managed_block(profile: dict[str, Any], plan: dict[str, Any]) -> str:
     return f"{MARKER_START}\n{compact_instruction(profile, plan)}{MARKER_END}\n"
 
 
-def backup(path: Path, backup_root: Path) -> None:
-    if not path.exists():
-        return
-    backup_root.mkdir(parents=True, exist_ok=True)
-    target = backup_root / path.name
-    suffix = 1
-    while target.exists():
-        target = backup_root / f"{path.stem}-{suffix}{path.suffix}"
-        suffix += 1
-    shutil.copy2(path, target)
+def safe_path(path: Path) -> Path:
+    """Reject links and special files without following them."""
+    path = path.absolute()
+    for item in [path, *path.parents]:
+        if item.is_symlink():
+            raise ValueError(f"Symlink requires manual review: {item}")
+        if item.exists() and item != path and not item.is_dir():
+            raise ValueError(f"Parent is not a directory: {item}")
+    if path.exists() and (not path.is_file() or path.stat().st_nlink > 1):
+        raise ValueError(f"Expected an unlinked regular file: {path}")
+    return path
 
 
-def merge_block(path: Path, block: str, backup_root: Path) -> None:
-    if path.is_symlink():
-        path = path.resolve()
-    original = path.read_text() if path.exists() else ""
-    if MARKER_START in original and MARKER_END in original:
-        start = original.index(MARKER_START)
-        end = original.index(MARKER_END, start) + len(MARKER_END)
-        updated = original[:start] + block.rstrip() + original[end:]
-    else:
-        updated = original.rstrip() + ("\n\n" if original.strip() else "") + block
-    if updated != original:
-        backup(path, backup_root)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(updated)
+def anchor(path: Path) -> Path:
+    path = path.expanduser().absolute()
+    for item in [path, *path.parents]:
+        if item.is_symlink():
+            # macOS supplies these root aliases. No user-created aliases are followed.
+            allowed = sys.platform == "darwin" and str(item) in ("/var", "/tmp", "/etc") and item.resolve() == Path("/private") / item.name
+            if not allowed:
+                raise ValueError(f"Home/workspace ancestor is a symlink: {item}")
+    return path.resolve()
 
 
-def remove_block(path: Path, backup_root: Path) -> bool:
-    if path.is_symlink():
-        path = path.resolve()
-    if not path.exists():
-        return False
-    original = path.read_text()
-    if MARKER_START not in original or MARKER_END not in original:
-        return False
-    start = original.index(MARKER_START)
-    end = original.index(MARKER_END, start) + len(MARKER_END)
-    updated = (original[:start] + original[end:]).replace("\n\n\n", "\n\n").strip() + "\n"
-    backup(path, backup_root)
-    path.write_text(updated)
-    return True
+def marker_span(text: str) -> tuple[int, int] | None:
+    starts = text.count(MARKER_START)
+    ends = text.count(MARKER_END)
+    if not starts and not ends:
+        return None
+    if starts != 1 or ends != 1:
+        raise ValueError("Expected exactly one complete managed marker pair")
+    start, end = text.index(MARKER_START), text.index(MARKER_END)
+    if start > end or (start and text[start-1] != "\n") or (end and text[end-1] != "\n"):
+        raise ValueError("Managed markers must be ordered and on separate lines")
+    end += len(MARKER_END)
+    if text[end:end+2] == "\r\n":
+        end += 2
+    elif text[end:end+1] == "\n":
+        end += 1
+    elif end != len(text):
+        raise ValueError("Managed end marker must end its line")
+    if text[start+len(MARKER_START):start+len(MARKER_START)+1] not in ("\r", "\n"):
+        raise ValueError("Managed start marker must end its line")
+    return start, end
 
 
-def write_local(path: Path, content: str) -> None:
+def merged_content(path: Path, block: str, cursor: bool = False) -> bytes:
+    safe_path(path)
+    original = path.read_bytes().decode("utf-8") if path.exists() else ""
+    span = marker_span(original)
+    if span:
+        return (original[:span[0]] + block + original[span[1]:]).encode("utf-8")
+    if cursor and path.exists():
+        raise ValueError("Existing Cursor rule is not managed by this template; choose manual setup")
+    header = "---\ndescription: Portable operating rules\nalwaysApply: true\n---\n\n" if cursor else ""
+    return (header + block + original).encode("utf-8")
+
+
+def atomic_write(path: Path, data: bytes, mode: int) -> None:
+    safe_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
+    fd, temporary = tempfile.mkstemp(prefix=".ide-config-", dir=path.parent)
     try:
-        path.chmod(0o600)
-    except OSError:
-        pass
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, mode)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def commit_changes(changes: dict[Path, bytes], home: Path) -> list[Path]:
+    """Preflight every path, save private recovery copies, rollback ordinary failures.
+
+    Not a cross-file power-loss transaction. Run without concurrent editors.
+    """
+    root = home / ".ide-config"
+    backup_root = root / "backups"
+    safe_path(root / "placeholder")
+    safe_path(backup_root / "placeholder")
+    snapshots = {}
+    for path, data in changes.items():
+        safe_path(path)
+        before = path.read_bytes() if path.exists() else None
+        if before != data:
+            snapshots[path] = (before, stat.S_IMODE(path.stat().st_mode) if before is not None else 0o600)
+    if not snapshots:
+        return []
+    run = backup_root / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:12])
+    run.mkdir(parents=True, mode=0o700)
+    os.chmod(run, 0o700)
+    journal = []
+    for number, (path, (before, mode)) in enumerate(snapshots.items()):
+        copy = f"{number:03d}.bak" if before is not None else None
+        if copy:
+            atomic_write(run / copy, before, 0o600)
+        journal.append({"path": str(path), "backup": copy, "mode": mode})
+    atomic_write(run / "manifest.json", (json.dumps({"version_timestamp": VERSION, "files": journal}, indent=2) + "\n").encode(), 0o600)
+    written = []
+    try:
+        for path, (before, mode) in snapshots.items():
+            safe_path(path)
+            if (path.read_bytes() if path.exists() else None) != before:
+                raise ValueError("Destination changed during apply; stop concurrent editors")
+            atomic_write(path, changes[path], mode)
+            written.append(path)
+    except (OSError, ValueError) as error:
+        failures = []
+        for path in reversed(written):
+            before, mode = snapshots[path]
+            try:
+                if path.read_bytes() != changes[path]:
+                    raise ValueError("Destination changed after write; preserve later edits")
+                if before is None:
+                    path.unlink()
+                else:
+                    atomic_write(path, before, mode)
+            except (OSError, ValueError) as recovery_error:
+                failures.append(str(recovery_error))
+        if failures:
+            raise OSError(f"Apply failed; recovery incomplete. Inspect {run}") from error
+        raise
+    return written
+
+
+def instruction_targets(profile: dict[str, Any], home: Path, workspace: Path | None) -> list[tuple[Path, bool]]:
+    targets = []
+    for ide, relative in (("codex", ".codex/AGENTS.md"), ("claude", ".claude/CLAUDE.md"), ("antigravity", ".gemini/GEMINI.md")):
+        if ide in profile["ides"]:
+            targets.append((home / relative, False))
+    if "cursor" in profile["ides"] and workspace:
+        targets.append((workspace / ".cursor/rules/ide-config-template.mdc", True))
+    return targets
+
+
+def planned_changes(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None) -> dict[Path, bytes]:
+    root = home / ".ide-config"
+    manual = root / "manual"
+    changes = {
+        root / "profile.local.json": (json.dumps(profile, indent=2, sort_keys=True) + "\n").encode(),
+        root / "plan.json": (json.dumps(plan, indent=2, sort_keys=True) + "\n").encode(),
+        manual / "chatgpt-custom-instructions.md": web_instruction(profile, plan, "ChatGPT").encode(),
+        manual / "claude-web-project-instructions.md": web_instruction(profile, plan, "Claude").encode(),
+        manual / "task-routing-guide.md": ("# Personal Task Routing Guide\n\nVersion-Timestamp: " + VERSION + "\n\n" + json.dumps(plan["routing"], indent=2) + "\n").encode(),
+    }
+    for path, cursor in instruction_targets(profile, home, workspace):
+        changes[path] = merged_content(path, managed_block(profile, plan), cursor)
+    if "cursor" in profile["ides"] and not workspace:
+        changes[manual / "cursor-user-rules.md"] = compact_instruction(profile, plan).encode()
+    for path in changes:
+        safe_path(path)
+    safe_path(root / "backups/placeholder")
+    return changes
 
 
 def apply(profile: dict[str, Any], plan: dict[str, Any], home: Path, workspace: Path | None) -> list[Path]:
-    root = home / ".ide-config"
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    backups = root / "backups" / stamp
-    outputs: list[Path] = []
-    write_local(root / "profile.local.json", json.dumps(profile, indent=2, sort_keys=True) + "\n")
-    write_local(root / "plan.json", json.dumps(plan, indent=2, sort_keys=True) + "\n")
-    outputs.extend([root / "profile.local.json", root / "plan.json"])
-    manual = root / "manual"
-    write_local(manual / "chatgpt-custom-instructions.md", web_instruction(profile, plan, "ChatGPT"))
-    write_local(manual / "claude-web-project-instructions.md", web_instruction(profile, plan, "Claude"))
-    write_local(manual / "task-routing-guide.md", "# Personal Task Routing Guide\n\n" + json.dumps(plan["routing"], indent=2) + "\n")
-    outputs.extend([manual / "chatgpt-custom-instructions.md", manual / "claude-web-project-instructions.md", manual / "task-routing-guide.md"])
-    block = managed_block(profile, plan)
-    if "codex" in profile["ides"]:
-        path = home / ".codex" / "AGENTS.md"
-        merge_block(path, block, backups)
-        outputs.append(path)
-    if "claude" in profile["ides"]:
-        path = home / ".claude" / "CLAUDE.md"
-        merge_block(path, block, backups)
-        outputs.append(path)
-    if "cursor" in profile["ides"]:
-        if workspace:
-            path = workspace / ".cursor" / "rules" / "ide-config-template.mdc"
-            cursor_block = f"---\ndescription: Personalized team operating rules\nalwaysApply: true\n---\n\n{managed_block(profile, plan)}"
-            backup(path, backups)
-            write_local(path, cursor_block)
-            outputs.append(path)
-        else:
-            write_local(manual / "cursor-user-rules.md", compact_instruction(profile, plan))
-            outputs.append(manual / "cursor-user-rules.md")
-    if "antigravity" in profile["ides"]:
-        path = home / ".gemini" / "GEMINI.md"
-        merge_block(path, block, backups)
-        outputs.append(path)
-    return outputs
+    home, workspace = anchor(home), anchor(workspace) if workspace else None
+    return commit_changes(planned_changes(profile, plan, home, workspace), home)
 
 
 def remove_managed_blocks(profile: dict[str, Any], home: Path, workspace: Path | None) -> list[Path]:
-    root = home / ".ide-config"
-    backups = root / "backups" / datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    targets: list[Path] = []
-    if "codex" in profile["ides"]:
-        targets.append(home / ".codex" / "AGENTS.md")
-    if "claude" in profile["ides"]:
-        targets.append(home / ".claude" / "CLAUDE.md")
-    if "antigravity" in profile["ides"]:
-        targets.append(home / ".gemini" / "GEMINI.md")
-    if "cursor" in profile["ides"] and workspace:
-        targets.append(workspace / ".cursor" / "rules" / "ide-config-template.mdc")
-    return [path for path in targets if remove_block(path, backups)]
+    home, workspace = anchor(home), anchor(workspace) if workspace else None
+    changes = {}
+    for path, _ in instruction_targets(profile, home, workspace):
+        safe_path(path)
+        original = path.read_bytes().decode("utf-8") if path.exists() else ""
+        span = marker_span(original)
+        if span:
+            changes[path] = (original[:span[0]] + original[span[1]:]).encode("utf-8")
+    return commit_changes(changes, home)
 
 
 def main() -> int:
@@ -444,6 +518,12 @@ def main() -> int:
         return 2
     plan = make_plan(profile, machine, args.focus)
     if args.plan:
+        try:
+            changes = planned_changes(profile, plan, anchor(args.home), anchor(args.workspace) if args.workspace else None)
+            plan["planned_files"] = [str(path) for path in changes]
+        except (OSError, ValueError) as error:
+            print(f"ERROR - {error}", file=sys.stderr)
+            return 2
         print(json.dumps(plan, indent=2, sort_keys=True))
         return 0
     if args.remove_managed_block:
@@ -462,4 +542,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError) as error:
+        print(f"ERROR - {error}", file=sys.stderr)
+        raise SystemExit(2)

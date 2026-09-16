@@ -90,7 +90,8 @@ def test_plan_recommends_safe_free_only_boundary() -> None:
         plan = json.loads(result.stdout)
         assert plan["routing"]["openrouter"] == "disabled unless explicitly enabled"
         assert plan["routing"]["paid_api_fallback"] == "never automatic"
-        assert "test-driven-development" in plan["recommended_skills"]
+        assert plan["recommended_skills"] == []
+        assert "recommendations only" in plan["skill_catalog"]["policy"]
 
 
 def test_cursor_subscription_is_not_a_hosted_fallback_provider() -> None:

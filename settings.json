@@ -2,33 +2,5 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": []
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Read",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *example*|*sample*|*template*) exit 0;; esac; case \"$f\" in */.env|*/.env.*|.env|.env.*|*.pem|*/id_rsa|*/id_ed25519|*/credentials.json) echo \"Blocked read of potential secrets file: $f (Security pillar — provide needed values another way)\" >&2; exit 2;; esac",
-            "timeout": 10,
-            "statusMessage": "Checking secrets guard"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "f=$(jq -r '.tool_response.filePath // .tool_input.file_path // empty'); [ -n \"$f\" ] && cd \"$(dirname \"$f\")\" && npx --no-install prettier --write --ignore-unknown \"$f\" 2>/dev/null || true",
-            "timeout": 30,
-            "statusMessage": "Auto-formatting"
-          }
-        ]
-      }
-    ]
   }
 }

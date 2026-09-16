@@ -1,77 +1,35 @@
-# Personalized Team Setup
+# Personalized Team Setup and Recovery
 
-Version-Timestamp: 2026-08-28 10:00:00 AST
+Version-Timestamp: 2026-09-16 15:27:25 AST
 
-## What this does
+Use the [README setup sequence](../README.md#start-here) with one saved non-secret profile. Planning reads only the selected instruction targets and basic machine capabilities. It does not inspect credentials, customer data or browser sessions. An apply creates local outputs and backups only after `--apply --confirm`.
 
-The setup wizard turns this public template into a local configuration plan for one person and one computer. It asks about name, role, goals, main stack, normal work, data sensitivity, IDEs, and available subscriptions. It scans only basic computer capacity and installed command-line tools.
+## Before applying
 
-It never asks for passwords, API keys, browser cookies, customer data, or proof of a subscription. It never downloads a local model, enables paid APIs, or changes files until the person runs `--apply --confirm`.
+1. Review the source and profile. Confirm app selection, workspace and available subscriptions.
+2. Close editors modifying the affected files. Review `planned_files` and existing instructions for policy conflicts.
+3. Keep custom app homes, managed company settings and remote environments on a manual setup path. The wizard only targets default locations under the selected home.
+4. Use `--home /absolute/disposable/home` and a disposable workspace to rehearse without touching live configuration.
+5. Apply with exactly the reviewed profile and workspace. Start a fresh app session and check loaded instructions.
 
-## Start here
+## Recovery
 
-Clone or create a repository from this template, then run:
+Backups live under `~/.ide-config/backups/<timestamp>-<unique-id>/`. Each run has a `manifest.json` mapping numbered backup files to original destinations and modes. A null backup means that destination did not exist before the run.
 
-```bash
-python3 scripts/ide-setup.py --scan
-python3 scripts/ide-setup.py --plan
-```
+Ordinary write failures trigger automatic rollback. A process interruption or power loss may require manual recovery. Stop edits, inspect the manifest, compare each current file against its backup and preserve any later user changes before restoring. Never execute a manifest as a script. Do not delete a new file merely because a manifest marks it new if it now contains useful work.
 
-The first command prints a non-secret computer report. The second command starts the guided interview and prints a plan without writing files.
-
-If the plan is correct, run:
-
-```bash
-python3 scripts/ide-setup.py --apply --confirm
-```
-
-For a team-managed, repeatable install, create a non-secret profile JSON file and use it without prompts:
+For ordinary removal, use the same app selection and original workspace:
 
 ```bash
-python3 scripts/ide-setup.py --plan --non-interactive --profile profile.example.json
-python3 scripts/ide-setup.py --apply --confirm --non-interactive --profile profile.example.json --workspace /absolute/project/path
+python3 scripts/ide-setup.py --remove-managed-block --confirm --profile ~/.ide-config/profile.local.json --workspace /absolute/path/to/project
 ```
 
-## What the wizard writes
+This removes only marked instruction blocks and creates backups of changed files. Other instructions, existing configuration and installed skills remain. Cursor frontmatter or empty instruction files may remain.
 
-| Destination | Behavior |
-|---|---|
-| `~/.ide-config/` | Local profile, recommendation plan, backup folder, and manual web prompt packs. This folder is personal and should not be committed. |
-| `~/.codex/AGENTS.md` | Adds or updates only a marked managed block. Existing instructions are kept. |
-| `~/.claude/CLAUDE.md` | Adds or updates only a marked managed block. Existing instructions are kept. |
-| `~/.gemini/GEMINI.md` | Adds or updates only a marked managed block when Antigravity is selected. Existing instructions are kept. |
-| `<workspace>/.cursor/rules/ide-config-template.mdc` | Creates a project-scoped Cursor rule only when `--workspace` is supplied. |
-| `~/.ide-config/manual/` | Copy-ready instructions for ChatGPT, Claude web, task routing, and Cursor when no workspace was supplied. |
+To clean up generated preferences, remove only the unwanted profile, plan or manual prompt files after preserving anything useful. **Do not delete the whole `.ide-config` directory while relying on its backups.** The spine updater stores its backup folder beside its target, under `.ide-config/backups`, rather than necessarily under your home.
 
-Every existing file changed by the wizard is copied first to `~/.ide-config/backups/<timestamp>/`.
+## Privacy and optional components
 
-## Routing recommendations
+Keep all outputs private. The profile may include your name, work goals and local paths even though credentials are forbidden. Do not publish scan output or backup manifests without reviewing them. No model downloads, skill installations, automatic hooks, paid API fallback or web-account modifications occur.
 
-The generated plan uses a transparent order:
-
-1. Use deterministic commands for checks, tests, formatting, builds, and search.
-2. Keep confidential work local when that is practical and a suitable local model exists.
-3. Use an available subscription for ordinary hosted work.
-4. Use a subscription premium model only for difficult or high-consequence review.
-5. Treat OpenRouter as off by default. If explicitly selected, permit only free models and public or sanitized material.
-6. Never enable a paid API fallback automatically.
-
-The local-model tier is only a capacity recommendation. It is capped by free disk as well as memory. Install a local model separately after reviewing its disk, memory, license, and performance requirements.
-
-## Web instructions
-
-ChatGPT and Claude web settings cannot be configured safely by a local script. The wizard creates concise copy blocks for their instruction or project settings. Review and paste the appropriate file manually. Do not paste private machine details, credentials, or customer data into a web service unless it is approved for that data.
-
-## Skill recommendations
-
-The wizard recommends skills from role categories. It does not install skills. Review publisher, permissions, data flow, and license before installing any third-party skill or plugin. A team may maintain an approved skill catalog in its own private repository.
-
-## Rollback
-
-Remove only this template's marked instruction blocks with:
-
-```bash
-python3 scripts/ide-setup.py --remove-managed-block --confirm --profile ~/.ide-config/profile.local.json
-```
-
-To remove the generated local preference files, delete `~/.ide-config/`. To restore an instruction file, use its timestamped copy under `~/.ide-config/backups/`. Review the difference before restoring it because a file may also contain changes made after the wizard ran.
+Skill recommendations reference a small pinned public catalog. Review the source and its dependencies before separate installation. Private company workflows and candidate skills are excluded from this template. Existing third-party plugins are outside the wizard's audit scope.
