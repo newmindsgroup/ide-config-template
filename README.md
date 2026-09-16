@@ -1,10 +1,45 @@
 # Safe Team Setup for Codex, Claude Code and Cursor
 
-Version-Timestamp: 2026-09-16 15:27:25 AST
+Version-Timestamp: 2026-09-16 15:43:18 AST
+
+[![Template validation](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml/badge.svg?branch=main)](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml)
+
+**One shared working standard. Three coding environments. A setup each teammate controls.**
+
+[Quick start](#start-here) · [Setup flow](#how-it-works) · [App destinations](#what-changes) · [Recovery](#preservation-and-recovery) · [Skills and privacy](#skills-and-privacy)
 
 A public, standard-library Python template for adding portable working instructions to a new or existing AI coding setup. Plan first, review the exact destination list, then apply explicitly.
 
 **Existing settings, credentials, MCP connections, installed skills and model selectors are not changed.** The wizard adds one marked instruction block. It does not install applications, plugins, hooks or models, or activate paid services.
+
+## At a glance
+
+| 🧭 Purpose | 👥 Who it helps | 📦 What you get |
+|---|---|---|
+| Give AI coding tools consistent instructions for planning, privacy, validation and handoffs. | Teammates setting up a new computer or improving an existing coding environment. | A reviewed setup plan, app-specific instruction blocks, backups and optional skill recommendations. |
+
+## How it works
+
+```mermaid
+flowchart TD
+    A["1. Clone and inspect the public template"] --> B["2. Create your private local profile"]
+    B --> C["3. Scan and preview the plan<br/>No configuration changes"]
+    C --> D{"Review and approve?"}
+    D -->|Revise| B
+    D -->|Approve| E["4. Apply with explicit confirmation<br/>Validate destinations and create backups"]
+    E --> F["Codex · Claude Code · Cursor<br/>Only selected instruction blocks are added or updated"]
+    F --> G["5. Start a new app session<br/>Verify the instructions were loaded"]
+```
+
+**In plain language:** clone → personalize → preview → approve → apply → verify. Your profile and recovery copies stay on your computer. Skill recommendations require a separate review and installation.
+
+### What the setup touches
+
+| ✍️ Adds or updates | 🔒 Leaves in place | 🖐️ Requires your action |
+|---|---|---|
+| This template's marked instruction blocks | Existing text outside those blocks | Approve the plan before applying |
+| Local profile, plan and recovery copies | App settings, credentials and MCP connections | Verify instructions in a new app session |
+| Manual web-instruction drafts | Installed skills and model selectors | Review optional skills and copy web instructions |
 
 ## Start here
 
