@@ -1,0 +1,73 @@
+{
+  "version_timestamp": "2026-09-16 15:19:14 AST",
+  "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins",
+  "policy": "Public reusable subset only; recommendations do not install, delete or authorize tools. Private and candidate skills excluded.",
+  "roles": {
+    "developer": [],
+    "designer": [],
+    "writer": [
+      "content-strategy",
+      "copy-editing"
+    ],
+    "product": [
+      "business-model-designer"
+    ],
+    "operations": [
+      "customer-research"
+    ],
+    "analyst": [
+      "customer-research"
+    ],
+    "general": []
+  },
+  "skills": [
+    {
+      "name": "customer-research",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "marketing-growth-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/marketing-growth-curated/skills/customer-research",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    },
+    {
+      "name": "cold-email",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "marketing-growth-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/marketing-growth-curated/skills/cold-email",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    },
+    {
+      "name": "lead-magnets",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "marketing-growth-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/marketing-growth-curated/skills/lead-magnets",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    },
+    {
+      "name": "content-strategy",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "marketing-growth-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/marketing-growth-curated/skills/content-strategy",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    },
+    {
+      "name": "copy-editing",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "marketing-growth-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/marketing-growth-curated/skills/copy-editing",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    },
+    {
+      "name": "business-model-designer",
+      "status": "approved-for-scoped-use",
+      "license": "MIT",
+      "plugin": "business-strategy-curated",
+      "source": "https://github.com/newmindsgroup/ai-agent-skills-library/tree/db563b1da6ec6e16a66e4174242845de16e16c1c/curation/plugins/business-strategy-curated/skills/business-model-designer",
+      "qualification": "Reviewed reusable instructions and narrow synthetic tests; validate fit and current source before adoption."
+    }
+  ]
+}

@@ -25,8 +25,19 @@ settings.local.json
 *.local.json
 .ide-config/
 
-# Projects: track only memory files, not transcripts/session data
-projects/*
-!projects/*/
-projects/*/*
-!projects/*/memory/
+# Never publish project memory, runtime configuration, credentials or local profiles.
+projects/
+.codex/
+.claude/
+.cursor/
+.env
+.env.*
+!.env.example
+!.env.sample
+auth.json
+credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+profile.json

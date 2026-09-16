@@ -1,5 +1,5 @@
 name: Validate Template
-# Version-Timestamp: 2026-08-28 12:15:00 AST
+# Version-Timestamp: 2026-09-16 15:27:25 AST
 
 # Guards the shared operating spine: confirms the SPINE markers are balanced and all
 # required sections are present, so an edit or an `update.sh` run can't silently break it.
@@ -7,16 +7,19 @@ name: Validate Template
 
 on:
   push:
-    paths: ['AGENTS.md', 'README.md', 'docs/**', 'scripts/**', 'tests/**', '*.json', '.github/workflows/**']
   pull_request:
-    paths: ['AGENTS.md', 'README.md', 'docs/**', 'scripts/**', 'tests/**', '*.json', '.github/workflows/**']
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
       - name: Check spine markers and required sections
         run: |
           f=AGENTS.md
@@ -44,7 +47,7 @@ jobs:
           Next Steps & Sequenced Building
           SECTIONS
           if [ "$miss" = "0" ]; then
-            echo "AGENTS.md spine valid — markers balanced, all 11 sections present."
+            echo "AGENTS.md spine valid: markers balanced, all 11 sections present."
           fi
           exit "$miss"
       - name: Verify public setup wizard
@@ -58,9 +61,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
       - name: Run wizard behavior tests
         run: python tests/test_ide_setup.py
+      - name: Run preservation tests
+        run: python tests/test_safe_setup.py
+      - name: Run update helper tests
+        run: python tests/test_update_helpers.py
