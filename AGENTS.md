@@ -1,6 +1,6 @@
 # Agent Instructions
 
-<!-- Version-Timestamp: 2026-09-08 18:07:45 AST -->
+<!-- Version-Timestamp: 2026-10-05 19:34:30 AST -->
 
 <!--
   Cross-IDE instruction spine using the AGENTS.md open standard (https://agents.md/),
@@ -43,6 +43,13 @@ python3 scripts/ide-setup.py --apply --confirm --focus llm-routing
 
 Keep the following hard boundaries: no automatic paid API fallback, no automatic local-model download, no OpenRouter unless explicitly selected, and no confidential data sent to an unapproved provider.
 
+## Opt-in app development
+
+Read `docs/app-development-routing.md` when adding quality-first web/mobile app guidance.
+Access declarations default false. Preserve existing profiles and ask each recipient
+to verify exact client, subscription inclusion and billing on their own computer.
+Never copy personal receipts or client evidence into this public repository.
+
 ## Your Profile
 
 - **Name:** {{YOUR_NAME}}
@@ -60,6 +67,9 @@ Keep the following hard boundaries: no automatic paid API fallback, no automatic
 - Announce what you're using and why ("Using `X` because…") so I learn the inventory passively — never make me memorize it.
 - Prefer an existing skill or agent over improvising. If a capability gap appears, suggest the `find-skills` skill to look for an installable one.
 - When a slash command would serve me better than a chat request (e.g. `/code-review`, `/security-review`), name it so I can reach for it next time.
+
+### Design evidence feedback loop
+- Use approved project evidence, direction and handoff methods. Record feedback source, outcome and checks in the project's work packet. Keep client evidence local. Promote shared methods only after repeated, verified results.
 
 ### Qualifying Questions Protocol
 - For work where the answers would meaningfully change the result — design, UI/UX, app & web development, architecture, data modeling, marketing, anything open-ended — ask 2–4 sharp qualifying questions **before** producing output (audience, platform, constraints, success criteria, existing assets, scope).

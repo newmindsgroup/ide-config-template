@@ -5,7 +5,7 @@
   "opus_available": false,
   "fable_available": false,
   "claude_extra_usage_off": false,
-  "version_timestamp": "2026-08-28 10:00:00 AST",
+  "version_timestamp": "2026-10-05 19:34:30 AST",
   "name": "Example team member",
   "role": "developer",
   "goals": [
@@ -26,5 +26,8 @@
     "chatgpt": true,
     "claude": false,
     "openrouter_free": false
-  }
+  },
+  "app_quality_first": false,
+  "sol_current_available": false,
+  "opus_current_available": false
 }

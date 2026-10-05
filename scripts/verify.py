@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version-Timestamp: 2026-09-16 16:02:15 AST
+# Version-Timestamp: 2026-10-05 19:34:30 AST
 """Verify a checkout or source archive using Python 3.10+ on all supported OSes."""
 from pathlib import Path
 import os
@@ -26,6 +26,8 @@ REQUIRED_SECTIONS = (
 
 def check_spine(root):
     text = (root / 'AGENTS.md').read_text(encoding='utf-8')
+    if text.count('<!--') != text.count('-->'):
+        raise ValueError('AGENTS.md contains an unclosed HTML comment')
     starts = list(re.finditer(r'^<!-- SPINE:START[^\r\n]*-->\s*$', text, re.MULTILINE))
     ends = list(re.finditer(r'^<!-- SPINE:END[^\r\n]*-->\s*$', text, re.MULTILINE))
     if (text.count('<!-- SPINE:START') != 1 or text.count('<!-- SPINE:END') != 1

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.6.0 (2026-10-05, prepared)
+
+Version-Timestamp: 2026-10-05 19:34:30 AST
+
+- Add opt-in web/mobile app guidance with false-default exact current-model declarations.
+- Preserve legacy model fields, strict schema and preview/apply recovery boundaries.
+- Carry project-local design feedback, privacy approval and fresh billing verification instructions.
+- Add generated-output parity/privacy and app-profile lifecycle regressions.
+- Runtime helpers, subscriptions, credentials and billing receipts are not distributed.
+
 ## 1.5.0 (2026-09-16)
 
 Version-Timestamp: 2026-09-16 16:02:15 AST

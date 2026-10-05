@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-09-16 16:02:15 AST
+Version-Timestamp: 2026-10-05 19:34:30 AST
 """
 
 from __future__ import annotations
@@ -30,11 +30,11 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-09-16 16:02:15 AST"
+VERSION = "2026-10-05 19:34:30 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
-PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions", "astra_available", "opus_available", "fable_available", "claude_extra_usage_off"}
+PROFILE_FIELDS = {"$schema", "schema_version", "version_timestamp", "name", "role", "goals", "stack", "privacy", "ides", "subscriptions", "astra_available", "opus_available", "fable_available", "claude_extra_usage_off", "app_quality_first", "sol_current_available", "opus_current_available"}
 SUBSCRIPTION_FIELDS = {"chatgpt", "claude", "gemini", "cursor", "openrouter_free"}
 FOCUSES = {"general", "llm-routing"}
 LLM_ROUTING_GOAL = "Implement a safe LLM routing and fallback strategy for this person and computer."
@@ -127,7 +127,10 @@ def interview() -> dict[str, Any]:
     opus_available = subscriptions["claude"] and choose("Confirmed Opus 5 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
     fable_available = subscriptions["claude"] and choose("Confirmed Fable 5.1 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
     extra_off = subscriptions["claude"] and choose("Confirmed Claude extra usage and usage-credit billing disabled? yes/no", yes_no, "no") == "yes"
-    return {"name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available, "opus_available": opus_available, "fable_available": fable_available, "claude_extra_usage_off": extra_off}
+    app_quality = choose("Enable quality-first web/mobile app guidance? yes/no", yes_no, "no") == "yes"
+    sol_current = app_quality and subscriptions["chatgpt"] and choose("Verified exact GPT-6.1 Sol execution through your subscription in the current client? yes/no", yes_no, "no") == "yes"
+    opus_current = app_quality and subscriptions["claude"] and choose("Verified exact Opus 5.5 execution, included usage and billing boundary on this computer? yes/no", yes_no, "no") == "yes"
+    return {"app_quality_first": app_quality, "sol_current_available": sol_current, "opus_current_available": opus_current, "name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available, "opus_available": opus_available, "fable_available": fable_available, "claude_extra_usage_off": extra_off}
 
 
 def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
@@ -147,11 +150,11 @@ def read_profile(path: Path | None, interactive: bool) -> dict[str, Any]:
     profile.setdefault("ides", [])
     profile.setdefault("subscriptions", {})
     profile.setdefault("astra_available", False)
-    for field in ("opus_available", "fable_available", "claude_extra_usage_off"):
+    for field in ("opus_available", "fable_available", "claude_extra_usage_off", "app_quality_first", "sol_current_available", "opus_current_available"):
         profile.setdefault(field, False)
     if (
         not isinstance(profile["astra_available"], bool)
-        or any(not isinstance(profile[field], bool) for field in ("opus_available", "fable_available", "claude_extra_usage_off"))
+        or any(not isinstance(profile[field], bool) for field in ("opus_available", "fable_available", "claude_extra_usage_off", "app_quality_first", "sol_current_available", "opus_current_available"))
         or not isinstance(profile["role"], str)
         or profile["role"] not in ROLES
         or not isinstance(profile["privacy"], str)
@@ -190,7 +193,22 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         if subscriptions.get("gemini")
         else "no hosted provider declared"
     )
+    app_implementation = "not selected; general routing remains in effect"
+    app_review = "not selected; legacy reviewer declarations remain separate"
+    if profile.get("app_quality_first", False):
+        if subscriptions.get("chatgpt") and profile.get("sol_current_available", False):
+            app_implementation = "GPT-6.1 Sol Medium for explicitly bounded app code; " + ("Astra Medium for complex/ambiguous code and Astra High for auth, permissions, PII, payments, migrations and release" if profile.get("astra_available", False) else "Astra access pending for complex and consequential work; checkpoint or use a separately approved substitute")
+        elif subscriptions.get("chatgpt") and profile.get("astra_available", False):
+            app_implementation = "Astra Medium for app code; Astra High for auth, permissions, PII, payments, migrations and release; current Sol access pending"
+        else:
+            app_implementation = "pending exact current-client subscription access; use suitable validated local capacity or checkpoint"
+        app_review = "Opus 5.5 (claude-opus-5-5), Medium focused or High complex/consequential independent app-code review after checks" if review_enabled and profile.get("opus_current_available", False) else "pending exact Opus 5.5 access, included usage and billing verification; legacy access cannot authorize a newer model"
     return {
+        "app_profile": "enabled" if profile.get("app_quality_first", False) else "disabled",
+        "app_implementation": app_implementation,
+        "app_review": app_review,
+        "app_verification": "Declarations are self-attestations, not verified execution. Verify exact model, subscription login and client before use, separately in each client including web; inspect actual returned model. Recheck Claude included access and Usage credits OFF within 24 hours and after account, plan or model changes. No model guarantees bug-free code. Native web/mobile builds, device checks, tests, security, accessibility and recovery evidence remain acceptance requirements. Confidential data needs project-specific approval for the chosen provider; a profile grants no data approval. Sonnet 5.5 is a candidate until separately validated. These are provisional routes; evaluate ten real tasks before changing defaults.",
+        "design_feedback": "Design evidence stays project-local: use approved direction and handoff methods, record feedback source, outcome and checks in the work packet. Promote shared methods only after repeated verified results; never publish client evidence.",
         "default": "deterministic tools first, then the smallest safe route",
         "private_work": "local model when installed and suitable" if machine["recommended_local_tier"] != "none" else "approved subscription with minimized context",
         "hosted_default": hosted,
@@ -242,6 +260,15 @@ def make_plan(profile: dict[str, Any], machine: dict[str, Any], focus: str) -> d
     }
 
 
+def app_instructions(route: dict[str, str]) -> str:
+    if route["app_profile"] != "enabled":
+        return ""
+    return ("App implementation: " + route["app_implementation"] + ".\n"
+            + "App review: " + route["app_review"] + ".\n"
+            + "For app-code milestones, App review replaces generic code/design and substantial review guidance. Run one reviewer.\n"
+            + "App verification: " + route["app_verification"] + "\n")
+
+
 def compact_instruction(profile: dict[str, Any], plan: dict[str, Any]) -> str:
     goals = ", ".join(profile["goals"]) or "reliable work"
     skills = ", ".join(plan["recommended_skills"]) or "none required by this role; use the approved catalog only when relevant"
@@ -278,6 +305,8 @@ Substantial review: {plan['routing']['substantial_review']}
 Review budget: {plan['routing']['review_budget']}
 Context budget: {plan['routing']['context_budget']}
 Measurement: {plan['routing']['measurement']}
+{app_instructions(plan['routing']).rstrip()}
+Design evidence: {plan['routing']['design_feedback']}
 
 ## Response contract
 
@@ -303,6 +332,8 @@ Routing: {plan['routing']['substantial_work']}. Web controls differ from Codex; 
 Context: {plan['routing']['context_budget']}
 Review: {plan['routing']['substantial_review']} {plan['routing']['review_budget']}
 Measurement: {plan['routing']['measurement']}
+{app_instructions(plan['routing']).rstrip()}
+Design evidence: {plan['routing']['design_feedback']}
 ```
 
 Routing note: {plan['routing']['default']}. {plan['routing']['openrouter']}.

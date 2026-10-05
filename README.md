@@ -1,6 +1,6 @@
 # Safe Team Setup for Codex, Claude Code and Cursor
 
-Version-Timestamp: 2026-09-16 16:02:15 AST
+Version-Timestamp: 2026-10-05 19:34:30 AST
 
 [![Template validation](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml/badge.svg?branch=main)](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml)
 
@@ -11,6 +11,10 @@ Version-Timestamp: 2026-09-16 16:02:15 AST
 A public, standard-library Python template for adding portable working instructions to a new or existing AI coding setup. Plan first, review the exact destination list, then apply explicitly.
 
 **Existing settings, credentials, MCP connections, installed skills and model selectors are not changed.** The wizard adds one marked instruction block. It does not install applications, plugins, hooks or models, or activate paid services.
+
+Latest update: opt-in quality-first app guidance, exact-model access declarations,
+project-local design feedback and current-client verification. See
+[app development routing](docs/app-development-routing.md). Existing profiles remain valid.
 
 ## At a glance
 

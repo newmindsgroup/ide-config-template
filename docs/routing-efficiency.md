@@ -1,6 +1,6 @@
 # Efficient routing on your computer
 
-Version-Timestamp: 2026-09-08 18:51:27 AST
+Version-Timestamp: 2026-10-05 19:34:30 AST
 
 ## Selective prompt refinement and planning
 
@@ -25,3 +25,9 @@ Prefer APIs/CLIs for deterministic work, browser/computer control when needed, a
 The private runtime's SQLite review counter, scorecard and benchmark are not installed by this public wizard. This repository generates portable instructions and manual web guidance. It does not change active model selectors, entitlements or remote access.
 
 Sources: [OpenAI skills](https://learn.chatgpt.com/docs/build-skills), [Claude context and costs](https://code.claude.com/docs/en/costs), [agent evaluation](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents), [Ollama context](https://docs.ollama.com/context-length).
+
+## Opt-in app development
+
+See [quality-first app guidance](app-development-routing.md) for destination-local,
+false-default exact model declarations, legacy compatibility and acceptance.
+The public wizard generates portable instructions; it does not install runtime helpers.
