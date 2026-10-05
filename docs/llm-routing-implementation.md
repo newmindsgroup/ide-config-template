@@ -1,6 +1,6 @@
 # LLM Routing and Fallback Implementation
 
-Version-Timestamp: 2026-09-08 18:07:45 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 
 ## Canonical intent
 
@@ -63,3 +63,9 @@ These are generated working instructions. Automatic quota detection and provider
 ## What the implementation produces
 
 The apply step creates a local non-secret profile, routing guide, manual web instructions, and selected IDE instruction blocks. It does not install models, add API keys, configure browser accounts, install plugins, or prove that a subscription is active.
+
+## Opt-in app development
+
+See [quality-first app guidance](app-development-routing.md) for destination-local,
+false-default exact model declarations, legacy compatibility and acceptance.
+The public wizard generates portable instructions; it does not install runtime helpers.

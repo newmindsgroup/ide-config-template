@@ -1,6 +1,6 @@
 # Safe Team Setup for Codex, Claude Code and Cursor
 
-Version-Timestamp: 2026-09-16 16:02:15 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 
 [![Template validation](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml/badge.svg?branch=main)](https://github.com/newmindsgroup/ide-config-template/actions/workflows/validate-agents.yml)
 
@@ -11,6 +11,10 @@ Version-Timestamp: 2026-09-16 16:02:15 AST
 A public, standard-library Python template for adding portable working instructions to a new or existing AI coding setup. Plan first, review the exact destination list, then apply explicitly.
 
 **Existing settings, credentials, MCP connections, installed skills and model selectors are not changed.** The wizard adds one marked instruction block. It does not install applications, plugins, hooks or models, or activate paid services.
+
+Latest update: opt-in quality-first app guidance, exact-model access declarations,
+project-local design feedback and current-client verification. See
+[app development routing](docs/app-development-routing.md). Existing profiles remain valid.
 
 ## At a glance
 
@@ -145,3 +149,7 @@ Routing guidance is advisory: it cannot switch a model, verify quotas, prove loc
 Send this repository with the instruction: "Clone and inspect it, create a local profile, show me the plan, and wait for my approval before applying." Never send your private profile, backups, tokens, client records or private configuration repository.
 
 Maintainers: read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and [PROVENANCE.md](PROVENANCE.md). License: MIT.
+
+Rollback note: version 1.5.0 rejects the new saved profile keys even for opt-outs.
+Use the explicit minimal-profile removal workflow in
+[app routing and rollback](docs/app-development-routing.md#rolling-back-to-an-older-checkout).

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Behavior checks for the public team setup wizard.
 
-Version-Timestamp: 2026-09-08 18:07:45 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 """
 
 from __future__ import annotations
@@ -243,6 +243,114 @@ def test_selective_prompt_planning_instructions():
         assert term in instruction
         for platform in ("ChatGPT", "Claude"):
             assert term in module.web_instruction(profile, {"routing": route}, platform)
+
+
+def test_app_profile_defaults_and_exact_access():
+    module = wizard_module()
+    machine = {"recommended_local_tier": "none"}
+    profile = {"subscriptions": {"chatgpt": True, "claude": True}, "astra_available": True,
+               "app_quality_first": True, "claude_extra_usage_off": True, "opus_available": True}
+    route = module.routing(profile, machine)
+    assert "Astra Medium" in route["app_implementation"]
+    assert "pending" in route["app_review"]
+    profile.update(sol_current_available=True, opus_current_available=True)
+    route = module.routing(profile, machine)
+    assert "GPT-6.1 Sol Medium" in route["app_implementation"]
+    assert "claude-opus-5-5" in route["app_review"]
+    assert "pending" not in route["app_review"]
+    assert "Astra High" in route["app_implementation"]
+    profile["claude_extra_usage_off"] = False
+    assert "pending" in module.routing(profile, machine)["app_review"]
+    profile["subscriptions"] = {}
+    assert "pending" in module.routing(profile, machine)["app_implementation"]
+    profile["app_quality_first"] = False
+    assert "app_implementation" not in module.routing(profile, machine)
+
+
+def test_sol_access_does_not_declare_astra_and_disabled_profile_is_quiet():
+    module=wizard_module()
+    profile={"name":"Tester","role":"developer","goals":[],"stack":[],"privacy":"internal",
+             "subscriptions":{"chatgpt":True},"sol_current_available":True,"app_quality_first":True}
+    route=module.routing(profile,{"recommended_local_tier":"none"})
+    assert "Astra access pending" in route["app_implementation"]
+    assert "Astra Medium" not in route["app_implementation"]
+    profile['app_quality_first']=False
+    plan={"recommended_skills":[],"routing":module.routing(profile,{"recommended_local_tier":"none"})}
+    for text in [module.compact_instruction(profile,plan),module.web_instruction(profile,plan,"ChatGPT")]:
+        assert "App implementation:" not in text
+        assert "Opus 5.5" not in text
+        assert "Sonnet 5.5" not in text
+
+
+def test_disabled_app_guidance_absent_from_persisted_outputs_and_pending_substitute():
+    module=wizard_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        home=Path(tmp);source=home/'input.json';source.write_text('{}')
+        profile=module.read_profile(source,False)
+        assert profile['privacy']=='internal'
+        machine={"platform":"test","architecture":"test","ram_gb":16,"free_disk_gb":25,"tools":{},"recommended_local_tier":"none"}
+        plan=module.make_plan(profile,machine,'general')
+        module.apply(profile,plan,home,None)
+        preview=run('--plan','--home',str(home),'--profile',str(source))
+        assert preview.returncode==0,preview.stderr
+        outputs=[preview.stdout,(home/'.ide-config/plan.json').read_text(),
+                 (home/'.ide-config/manual/task-routing-guide.md').read_text()]
+        for text in outputs:
+            for term in ('Opus 5.5','Sonnet 5.5','app_verification','app_implementation'):
+                assert term not in text
+        profile['app_quality_first']=True
+        route=module.routing(profile,machine)
+        assert 'approved substitute' in route['app_review']
+        assert profile['privacy']=='internal'
+
+
+def test_schema_and_profile_fields_match():
+    module=wizard_module()
+    schema=json.loads((ROOT/'profile.schema.json').read_text())
+    assert set(schema['properties']) == module.PROFILE_FIELDS
+    for field in ('app_quality_first','sol_current_available','opus_current_available'):
+        assert schema['properties'][field]['default'] is False
+        assert schema['properties'][field]['type'] == 'boolean'
+
+
+def test_app_profile_validation_and_old_profile_compatibility():
+    module = wizard_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "profile.json"
+        path.write_text("{}")
+        old = module.read_profile(path, False)
+        for field in ("app_quality_first", "sol_current_available", "opus_current_available"):
+            assert old[field] is False
+            path.write_text(json.dumps({field: "yes"}))
+            try:
+                module.read_profile(path, False)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Non-boolean access must fail")
+
+
+def test_app_guidance_reaches_ide_and_web_without_privacy_override():
+    module = wizard_module()
+    profile = {"name": "Tester", "role": "developer", "goals": [], "stack": [],
+               "privacy": "confidential", "subscriptions": {"chatgpt": True, "claude": True},
+               "app_quality_first": True, "sol_current_available": True,
+               "opus_current_available": True, "claude_extra_usage_off": True}
+    plan = {"recommended_skills": [], "routing": module.routing(profile, {"recommended_local_tier": "none"})}
+    outputs = [module.compact_instruction(profile, plan)]
+    outputs += [module.web_instruction(profile, plan, platform) for platform in ("ChatGPT", "Claude")]
+    for text in outputs:
+        assert "GPT-6.1 Sol Medium" in text
+        assert "claude-opus-5-5" in text
+        assert "24 hours" in text
+        assert "project-specific approval" in text
+        assert "Design evidence" in text
+        assert "no model guarantees" in text.lower()
+        assert len(text.split()) <= 3000
+        import re
+        assert not re.search(r"/Users/|/private/var/|[A-Za-z]:\\Users\\|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", text)
+        for private_term in ("private-client-evidence", "personal-account-receipt", "ANTHROPIC_API_KEY", "api_key"):
+            assert private_term not in text
 
 
 if __name__ == "__main__":

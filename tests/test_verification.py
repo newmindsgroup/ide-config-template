@@ -1,4 +1,4 @@
-# Version-Timestamp: 2026-09-16 16:02:15 AST
+# Version-Timestamp: 2026-10-05 19:39:56 AST
 """Portable verification dispatch and structural regression checks."""
 import importlib.util
 from contextlib import redirect_stderr, redirect_stdout
@@ -32,6 +32,25 @@ class Verification(unittest.TestCase):
             (root / 'AGENTS.md').write_text('<!-- SPINE:START -->\n' + headings
                                           + '\n<!-- SPINE:END -->\n', encoding='utf-8')
             verifier.check_spine(root)
+
+    def test_unclosed_timestamp_comment_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            headings='\n'.join('### '+name for name in verifier.REQUIRED_SECTIONS)
+            text='<!-- Version-Timestamp: invalid>\n<!-- SPINE:START -->\n'+headings+'\n<!-- SPINE:END -->\n'
+            (root/'AGENTS.md').write_text(text,encoding='utf-8')
+            with self.assertRaises(ValueError):verifier.check_spine(root)
+
+    def test_prose_arrows_allowed_and_misordered_comments_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            headings='\n'.join('### '+name for name in verifier.REQUIRED_SECTIONS)
+            spine='<!-- SPINE:START -->\n'+headings+'\n<!-- SPINE:END -->\n'
+            (root/'AGENTS.md').write_text('A --> B\n'+spine,encoding='utf-8')
+            verifier.check_spine(root)
+            for text in (spine+'--> <!-- unfinished', '<!-- nested '+spine):
+                (root/'AGENTS.md').write_text(text,encoding='utf-8')
+                with self.assertRaises(ValueError):verifier.check_spine(root)
 
     def test_new_test_scripts_are_automatically_included(self):
         with tempfile.TemporaryDirectory() as directory:

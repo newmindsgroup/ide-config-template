@@ -1,4 +1,4 @@
-# Version-Timestamp: 2026-09-16 16:02:15 AST
+# Version-Timestamp: 2026-10-05 19:39:56 AST
 """Regression coverage for multiple computers, profiles and workspaces."""
 import importlib.util
 import json
@@ -29,6 +29,39 @@ class Lifecycle(unittest.TestCase):
         return w.make_plan(self.profile, self.machine, 'general')
     def cli(self, *args):
         return subprocess.run([sys.executable,str(ROOT/'scripts/ide-setup.py'),'--home',str(self.home),'--profile',str(self.profile_file),*args],capture_output=True,text=True)
+    def test_quality_profile_apply_disable_and_remove_preserve_user_bytes(self):
+        self.profile.update(app_quality_first=True, sol_current_available=True,
+                            opus_current_available=True, claude_extra_usage_off=True,
+                            subscriptions={"chatgpt":True,"claude":True})
+        self.profile['ides']=['codex','claude','cursor','antigravity']
+        self.profile_file.write_text(json.dumps(self.profile))
+        workspace=self.home/'quality-project'
+        destination=self.home/'.codex/AGENTS.md'
+        destination.parent.mkdir(parents=True)
+        original=b"User rules\r\nKeep this exact text\r\n"
+        destination.write_bytes(original)
+        preview=json.loads(self.cli('--plan','--workspace',str(workspace)).stdout)
+        result=self.cli('--apply','--confirm','--workspace',str(workspace),
+                        '--expect-plan-sha256',preview['plan_sha256'])
+        self.assertEqual(result.returncode,0,result.stderr)
+        for target in (destination,self.home/'.claude/CLAUDE.md',self.home/'.gemini/GEMINI.md',
+                       workspace/'.cursor/rules/ide-config-template.mdc'):
+            self.assertIn(b'claude-opus-5-5',target.read_bytes())
+        current=destination.read_bytes()
+        self.assertIn(b'GPT-6.1 Sol Medium',current)
+        self.assertIn(b'claude-opus-5-5',current)
+        self.assertTrue(current.endswith(original))
+        w.apply(self.profile,self.plan(),self.home,workspace)
+        self.assertEqual(destination.read_bytes(),current)
+        self.profile['app_quality_first']=False
+        w.apply(self.profile,self.plan(),self.home,workspace)
+        targets=(destination,self.home/'.claude/CLAUDE.md',self.home/'.gemini/GEMINI.md',workspace/'.cursor/rules/ide-config-template.mdc')
+        for target in targets:self.assertNotIn(b'App implementation:',target.read_bytes())
+        w.remove_managed_blocks(self.profile,self.home,None)
+        self.assertEqual(destination.read_bytes(),original)
+        for target in targets:self.assertNotIn(w.MARKER_START.encode(),target.read_bytes())
+        self.assertTrue(list((self.home/'.ide-config/backups').rglob('manifest.json')))
+
     def test_deselected_app_still_removed(self):
         w.apply(self.profile,self.plan(),self.home,None)
         self.profile['ides']=['codex']

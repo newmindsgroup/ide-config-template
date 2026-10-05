@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "IDE Configuration Template Profile",
-  "description": "Non-secret local preferences used by scripts/ide-setup.py.",
+  "description": "Non-secret local preferences used by scripts/ide-setup.py. Version-Timestamp: 2026-10-05 19:39:56 AST",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -100,6 +100,21 @@
     },
     "$schema": {
       "type": "string"
+    },
+    "app_quality_first": {
+      "type": "boolean",
+      "default": false,
+      "description": "Opt-in app-code guidance only; does not install runtime helpers."
+    },
+    "sol_current_available": {
+      "type": "boolean",
+      "default": false,
+      "description": "Computer-local self-attestation of exact GPT-6.1 Sol subscription execution in the current client."
+    },
+    "opus_current_available": {
+      "type": "boolean",
+      "default": false,
+      "description": "Computer-local self-attestation of exact claude-opus-5-5 included subscription execution; independent from legacy Opus access."
     }
   }
 }
