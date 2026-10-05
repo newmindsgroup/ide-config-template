@@ -1,12 +1,12 @@
 # Quality-first web and mobile app guidance
 
-Version-Timestamp: 2026-10-05 19:34:30 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 
 The wizard generates instructions, not an executable router. It does not install
 `llm-route`, a Claude runner, model selectors, accounts, quotas or paid services.
 Native mobile toolchains and device acceptance remain project-specific.
 
-## Opt in on each destination
+## Opt in on each computer, verify each client
 
 Use the scan and reviewed plan/apply workflow with these optional JSON booleans:
 
@@ -83,3 +83,7 @@ file with `--plan-remove --profile <minimal-profile>` and the reviewed removal w
 `--remove-managed-block --confirm --profile <minimal-profile>`. Keep the original
 profile and installation registry backed up. Do not delete an entire app directory.
 Each client, including web, needs its own access verification before using guidance.
+
+When disabling app guidance, include each configured Cursor `--workspace` to update
+its rule. Omitting a workspace preserves that project rule. Explicit removal uses
+the installation registry to remove all tracked managed blocks after review.

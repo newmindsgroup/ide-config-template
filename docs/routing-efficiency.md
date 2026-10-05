@@ -1,6 +1,6 @@
 # Efficient routing on your computer
 
-Version-Timestamp: 2026-10-05 19:34:30 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 
 ## Selective prompt refinement and planning
 

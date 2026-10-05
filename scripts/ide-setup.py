@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-10-05 19:34:30 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from typing import Any
 
 MARKER_START = "<!-- IDE-CONFIG-TEMPLATE:START -->"
 MARKER_END = "<!-- IDE-CONFIG-TEMPLATE:END -->"
-VERSION = "2026-10-05 19:34:30 AST"
+VERSION = "2026-10-05 19:39:56 AST"
 ROLES = {"developer", "designer", "writer", "product", "operations", "analyst", "general"}
 PRIVACY_LEVELS = {"public", "internal", "confidential"}
 IDE_NAMES = {"codex", "claude", "cursor", "antigravity"}
@@ -128,8 +128,8 @@ def interview() -> dict[str, Any]:
     fable_available = subscriptions["claude"] and choose("Confirmed Fable 5.1 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
     extra_off = subscriptions["claude"] and choose("Confirmed Claude extra usage and usage-credit billing disabled? yes/no", yes_no, "no") == "yes"
     app_quality = choose("Enable quality-first web/mobile app guidance? yes/no", yes_no, "no") == "yes"
-    sol_current = app_quality and subscriptions["chatgpt"] and choose("Verified exact GPT-6.1 Sol execution through your subscription in the current client? yes/no", yes_no, "no") == "yes"
-    opus_current = app_quality and subscriptions["claude"] and choose("Verified exact Opus 5.5 execution, included usage and billing boundary on this computer? yes/no", yes_no, "no") == "yes"
+    sol_current = app_quality and subscriptions["chatgpt"] and choose("Verified exact GPT-6.1 Sol execution through your subscription in each intended Codex/ChatGPT client? yes/no", yes_no, "no") == "yes"
+    opus_current = app_quality and subscriptions["claude"] and choose("Verified exact Opus 5.5 execution, included usage and billing boundary in each intended Claude Code/Claude client? yes/no", yes_no, "no") == "yes"
     return {"app_quality_first": app_quality, "sol_current_available": sol_current, "opus_current_available": opus_current, "name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available, "opus_available": opus_available, "fable_available": fable_available, "claude_extra_usage_off": extra_off}
 
 
@@ -197,17 +197,17 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
     app_review = "not selected; legacy reviewer declarations remain separate"
     if profile.get("app_quality_first", False):
         if subscriptions.get("chatgpt") and profile.get("sol_current_available", False):
-            app_implementation = "GPT-6.1 Sol Medium for explicitly bounded app code; " + ("Astra Medium for complex/ambiguous code and Astra High for auth, permissions, PII, payments, migrations and release" if profile.get("astra_available", False) else "Astra access pending for complex and consequential work; checkpoint or use a separately approved substitute")
+            app_implementation = "GPT-6.1 Sol Medium (Codex/ChatGPT only) for explicitly bounded app code; " + ("Astra Medium for complex/ambiguous code and Astra High for auth, permissions, PII, payments, migrations and release" if profile.get("astra_available", False) else "Astra access pending for complex and consequential work; checkpoint or use a separately approved substitute")
         elif subscriptions.get("chatgpt") and profile.get("astra_available", False):
             app_implementation = "Astra Medium for app code; Astra High for auth, permissions, PII, payments, migrations and release; current Sol access pending"
         else:
             app_implementation = "pending exact current-client subscription access; use suitable validated local capacity or checkpoint"
-        app_review = "Opus 5.5 (claude-opus-5-5), Medium focused or High complex/consequential independent app-code review after checks" if review_enabled and profile.get("opus_current_available", False) else "pending exact Opus 5.5 access, included usage and billing verification; legacy access cannot authorize a newer model"
-    return {
+        app_review = "Opus 5.5 (claude-opus-5-5, Claude Code/Claude only), Medium focused or High complex/consequential independent app-code review after checks" if review_enabled and profile.get("opus_current_available", False) else "pending exact Opus 5.5 access, included usage and billing verification; hold app review or record an explicitly approved substitute; legacy access cannot authorize a newer model"
+    result = {
         "app_profile": "enabled" if profile.get("app_quality_first", False) else "disabled",
         "app_implementation": app_implementation,
         "app_review": app_review,
-        "app_verification": "Declarations are self-attestations, not verified execution. Verify exact model, subscription login and client before use, separately in each client including web; inspect actual returned model. Recheck Claude included access and Usage credits OFF within 24 hours and after account, plan or model changes. No model guarantees bug-free code. Native web/mobile builds, device checks, tests, security, accessibility and recovery evidence remain acceptance requirements. Confidential data needs project-specific approval for the chosen provider; a profile grants no data approval. Sonnet 5.5 is a candidate until separately validated. These are provisional routes; evaluate ten real tasks before changing defaults.",
+        "app_verification": "Declarations are self-attestations, not verified execution. Verify exact model, subscription login and client before use, separately in each client including web; inspect actual returned model. Recheck Claude included access and Usage credits OFF within 24 hours and after account, plan or model changes. No model guarantees bug-free code. Native web/mobile builds, device checks, tests, security, accessibility and recovery evidence remain acceptance requirements. Confidential data needs project-specific approval for the chosen provider; a profile grants no data approval. Sonnet 5.5 is a candidate until separately validated. These routes describe the named clients. In other clients, use an approved handoff or hold; instructions do not switch model selectors. These are provisional routes; evaluate ten real tasks before changing defaults.",
         "design_feedback": "Design evidence stays project-local: use approved direction and handoff methods, record feedback source, outcome and checks in the work packet. Promote shared methods only after repeated verified results; never publish client evidence.",
         "default": "deterministic tools first, then the smallest safe route",
         "private_work": "local model when installed and suitable" if machine["recommended_local_tier"] != "none" else "approved subscription with minimized context",
@@ -231,6 +231,10 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "fast_mode": "only when the person explicitly prioritizes latency",
         "cursor_note": "Cursor subscription requires an in-app model check and is not a provider fallback route." if subscriptions.get("cursor") else "Cursor is not selected as a provider fallback route.",
     }
+
+    if not profile.get("app_quality_first", False):
+        result = {key: value for key, value in result.items() if not key.startswith("app_")}
+    return result
 
 
 def make_plan(profile: dict[str, Any], machine: dict[str, Any], focus: str) -> dict[str, Any]:
@@ -261,7 +265,7 @@ def make_plan(profile: dict[str, Any], machine: dict[str, Any], focus: str) -> d
 
 
 def app_instructions(route: dict[str, str]) -> str:
-    if route["app_profile"] != "enabled":
+    if route.get("app_profile") != "enabled":
         return ""
     return ("App implementation: " + route["app_implementation"] + ".\n"
             + "App review: " + route["app_review"] + ".\n"

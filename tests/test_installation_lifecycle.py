@@ -1,4 +1,4 @@
-# Version-Timestamp: 2026-10-05 19:34:30 AST
+# Version-Timestamp: 2026-10-05 19:39:56 AST
 """Regression coverage for multiple computers, profiles and workspaces."""
 import importlib.util
 import json
@@ -51,13 +51,15 @@ class Lifecycle(unittest.TestCase):
         self.assertIn(b'GPT-6.1 Sol Medium',current)
         self.assertIn(b'claude-opus-5-5',current)
         self.assertTrue(current.endswith(original))
-        w.apply(self.profile,self.plan(),self.home,None)
+        w.apply(self.profile,self.plan(),self.home,workspace)
         self.assertEqual(destination.read_bytes(),current)
         self.profile['app_quality_first']=False
-        w.apply(self.profile,self.plan(),self.home,None)
-        self.assertNotIn(b'App implementation:',destination.read_bytes())
+        w.apply(self.profile,self.plan(),self.home,workspace)
+        targets=(destination,self.home/'.claude/CLAUDE.md',self.home/'.gemini/GEMINI.md',workspace/'.cursor/rules/ide-config-template.mdc')
+        for target in targets:self.assertNotIn(b'App implementation:',target.read_bytes())
         w.remove_managed_blocks(self.profile,self.home,None)
         self.assertEqual(destination.read_bytes(),original)
+        for target in targets:self.assertNotIn(w.MARKER_START.encode(),target.read_bytes())
         self.assertTrue(list((self.home/'.ide-config/backups').rglob('manifest.json')))
 
     def test_deselected_app_still_removed(self):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Behavior checks for the public team setup wizard.
 
-Version-Timestamp: 2026-10-05 19:34:30 AST
+Version-Timestamp: 2026-10-05 19:39:56 AST
 """
 
 from __future__ import annotations
@@ -264,7 +264,7 @@ def test_app_profile_defaults_and_exact_access():
     profile["subscriptions"] = {}
     assert "pending" in module.routing(profile, machine)["app_implementation"]
     profile["app_quality_first"] = False
-    assert "not selected" in module.routing(profile, machine)["app_implementation"]
+    assert "app_implementation" not in module.routing(profile, machine)
 
 
 def test_sol_access_does_not_declare_astra_and_disabled_profile_is_quiet():
@@ -280,6 +280,28 @@ def test_sol_access_does_not_declare_astra_and_disabled_profile_is_quiet():
         assert "App implementation:" not in text
         assert "Opus 5.5" not in text
         assert "Sonnet 5.5" not in text
+
+
+def test_disabled_app_guidance_absent_from_persisted_outputs_and_pending_substitute():
+    module=wizard_module()
+    with tempfile.TemporaryDirectory() as tmp:
+        home=Path(tmp);source=home/'input.json';source.write_text('{}')
+        profile=module.read_profile(source,False)
+        assert profile['privacy']=='internal'
+        machine={"platform":"test","architecture":"test","ram_gb":16,"free_disk_gb":25,"tools":{},"recommended_local_tier":"none"}
+        plan=module.make_plan(profile,machine,'general')
+        module.apply(profile,plan,home,None)
+        preview=run('--plan','--home',str(home),'--profile',str(source))
+        assert preview.returncode==0,preview.stderr
+        outputs=[preview.stdout,(home/'.ide-config/plan.json').read_text(),
+                 (home/'.ide-config/manual/task-routing-guide.md').read_text()]
+        for text in outputs:
+            for term in ('Opus 5.5','Sonnet 5.5','app_verification','app_implementation'):
+                assert term not in text
+        profile['app_quality_first']=True
+        route=module.routing(profile,machine)
+        assert 'approved substitute' in route['app_review']
+        assert profile['privacy']=='internal'
 
 
 def test_schema_and_profile_fields_match():
