@@ -5,7 +5,7 @@ The wizard stores non-secret preferences on the current computer. It never reads
 credentials, downloads models, enables paid APIs, or modifies configuration until
 the caller supplies --apply --confirm.
 
-Version-Timestamp: 2026-10-05 19:39:56 AST
+Version-Timestamp: 2026-11-10 08:56:06 AST
 """
 
 from __future__ import annotations
@@ -128,8 +128,8 @@ def interview() -> dict[str, Any]:
     fable_available = subscriptions["claude"] and choose("Confirmed Fable 5.1 included and selectable on this computer? yes/no", yes_no, "no") == "yes"
     extra_off = subscriptions["claude"] and choose("Confirmed Claude extra usage and usage-credit billing disabled? yes/no", yes_no, "no") == "yes"
     app_quality = choose("Enable quality-first web/mobile app guidance? yes/no", yes_no, "no") == "yes"
-    sol_current = app_quality and subscriptions["chatgpt"] and choose("Verified exact GPT-6.1 Sol execution through your subscription in each intended Codex/ChatGPT client? yes/no", yes_no, "no") == "yes"
-    opus_current = app_quality and subscriptions["claude"] and choose("Verified exact Opus 5.5 execution, included usage and billing boundary in each intended Claude Code/Claude client? yes/no", yes_no, "no") == "yes"
+    sol_current = subscriptions["chatgpt"] and choose("Verified exact GPT-6.1 Sol execution through your subscription in each intended Codex/ChatGPT client? yes/no", yes_no, "no") == "yes"
+    opus_current = subscriptions["claude"] and choose("Verified exact Opus 5.5 execution, included usage and billing boundary in each intended Claude Code/Claude client? yes/no", yes_no, "no") == "yes"
     return {"app_quality_first": app_quality, "sol_current_available": sol_current, "opus_current_available": opus_current, "name": name, "role": role, "goals": goals, "stack": stack, "privacy": privacy, "ides": ides, "subscriptions": subscriptions, "astra_available": astra_available, "opus_available": opus_available, "fable_available": fable_available, "claude_extra_usage_off": extra_off}
 
 
@@ -212,17 +212,17 @@ def routing(profile: dict[str, Any], machine: dict[str, Any]) -> dict[str, str]:
         "default": "deterministic tools first, then the smallest safe route",
         "private_work": "local model when installed and suitable" if machine["recommended_local_tier"] != "none" else "approved subscription with minimized context",
         "hosted_default": hosted,
-        "substantial_work": "Astra, Low effort, Standard speed; raise to Medium or High on evidence or consequence" if subscriptions.get("chatgpt") and profile.get("astra_available", False) else "best suitable model confirmed in the available subscription; otherwise a suitable installed local model",
-        "routine_work": "Terra Medium for routine implementation; Luna Low for narrow hosted work, when available",
-        "high_consequence": "raise effort to High only when warranted; keep tests, browser checks and independent review",
+        "substantial_work": "GPT-6.1 Sol Low, Standard speed for everyday work; verify access in the exact client" if subscriptions.get("chatgpt") and profile.get("sol_current_available", False) else ("Astra Medium for complex work and High for sensitive work; current Sol access pending" if subscriptions.get("chatgpt") and profile.get("astra_available", False) else "current-model access pending; use a suitable confirmed model or installed local model"),
+        "routine_work": "Terra 6.1 Low is a candidate for scoped screen, writing and code fixes; Luna 6 Low for narrow hosted work. Verify exact client access before use",
+        "high_consequence": "Astra Medium for complex work and High for sensitive or consequential work, when verified available; keep tests, browser checks and independent review",
         "capacity_fallback": "On shared OpenAI quota exhaustion, checkpoint and use an approved available Claude subscription or suitable local model. Switching OpenAI models does not reset allowance.",
         "automation": "instruction and recommendation only; no quota polling, provider execution or automatic replay",
         "premium_review": "use an available subscription only for high-consequence synthesis or independent review",
-        "code_design_review": "Opus 5 Medium after real checks at meaningful code, UI, UX and visual milestones" if review_enabled and profile.get("opus_available") else "pending confirmed included reviewer access, billing and data approval; request an approved substitute",
-        "complex_review": "Fable 5.1 High for complex architecture, major design systems, persistent defects and difficult synthesis; review approach and completed milestone" if review_enabled and profile.get("fable_available") else "pending Fable access and billing confirmation; use confirmed Opus only as an explicitly recorded substitute",
-        "review_evidence": "requirements, changes and actual check results; desktop/mobile screenshots and changed interaction states for UI. Resolve findings and rerun checks. No model response is release approval.",
+        "code_design_review": "claude-opus-5-5 Medium for focused independent review after checks; High for complex or consequential review, after project-specific privacy and included billing verification" if review_enabled and profile.get("opus_current_available", False) else "pending exact Opus 5.5 access, included billing and project-specific data approval; request an approved substitute",
+        "complex_review": "Fable 5.2 is a candidate only, not an active route; independently verify access, billing, privacy and suitability before any adoption. Use the confirmed Opus 5.5 route when approved" if review_enabled and profile.get("opus_current_available", False) else "pending independent reviewer access and approval; Fable 5.2 is a candidate only, not an active route",
+        "review_evidence": "requirements, changes and actual check results; desktop/mobile screenshots and changed interaction states for UI. Obtain project-specific data approval, resolve findings and rerun checks. No model response is release approval.",
         "review_scope": "also review consequential research, client deliverables, strategy, forecasts and automation; use proportionate source, calculation and human checks",
-        "substantial_review": "Fable 5.1 Medium for substantial bounded synthesis across coding, design, content, planning and analysis; High for complex or consequential work. Opus 5 for smaller focused reviews." if review_enabled and profile.get("fable_available") else "Use only an explicitly confirmed included reviewer; keep review pending when unavailable.",
+        "substantial_review": "Use confirmed Opus 5.5 after privacy and billing checks; Fable 5.2 remains a candidate only" if review_enabled and profile.get("opus_current_available", False) else "Use only an explicitly confirmed included reviewer with data approval; keep review pending when unavailable.",
         "review_budget": "One reviewer per milestone; at most two attempts per phase, no duplicate unchanged evidence. Stop and checkpoint on persistent failure. This template supplies instructions, not an executable review counter.",
         "context_budget": "Keep essential safety and project rules always loaded; load exact skills on demand. Store approved plans, decisions and checks in project files. Do not delete safeguards or move data to external memory without approval. Reuse a short task brief, not a separate self-prompt. Use prompt-engineering-expert when installed for instruction deliverables, complex handoffs or demonstrated instruction-caused failures, not ordinary coding or tool errors. Refine once, then execute. Recommend Plan mode for unresolved consequential decisions or broad, costly-to-reverse changes; never claim prose switches modes. Resolve consequential decisions with the user before execution, regardless of mode. Planning grants no implementation or deployment authority. Neither planning nor refinement automatically raises effort or calls another model. Real checks remain required.",
         "measurement": "Record opaque task ID, model, effort, acceptance, elapsed time and repairs locally. Add approximate usage deltas only when known. Evaluate ten real tasks without duplicating paid work.",
