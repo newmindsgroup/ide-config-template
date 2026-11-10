@@ -1,6 +1,6 @@
 # LLM Routing and Fallback Implementation
 
-Version-Timestamp: 2026-10-05 19:39:56 AST
+Version-Timestamp: 2026-11-10 08:56:06 AST
 
 ## Canonical intent
 
@@ -52,9 +52,9 @@ python3 scripts/ide-setup.py --apply --confirm --focus llm-routing
 
 Re-evaluate the route when scope expands, evidence conflicts, tests fail, the task needs a tool that the current route lacks, or the result becomes security-sensitive, client-facing, or production-bound.
 
-## Astra and continuity
+## Current routes and continuity
 
-Confirm access separately from subscription ownership. Use `astra_available: true` in the JSON profile only after checking the account's model selector. Astra Low Standard is the starting route; Terra and Luna remain options for routine and narrow work. Raise effort to Medium or High when evidence, consequence or difficulty warrants it. See [routing efficiency](routing-efficiency.md).
+Confirm access separately from subscription ownership and in each intended client. Set `sol_current_available: true` only after verifying GPT-6.1 Sol execution. The everyday recommendation is Sol Low Standard. Luna 6 Low suits narrow hosted work; Terra 6.1 Low is a scoped-work candidate. Astra Medium suits complex work and High sensitive work when verified. See [routing efficiency](routing-efficiency.md).
 
 On quota exhaustion, preserve task state before changing providers. Do not replay partially completed writes automatically. An unavailable OpenAI allowance applies across affected OpenAI models; use an approved available Claude subscription or a suitable local model instead. Missing capacity must produce a clear stop rather than paid API usage.
 

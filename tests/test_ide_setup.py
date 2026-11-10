@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Behavior checks for the public team setup wizard.
 
-Version-Timestamp: 2026-10-05 19:39:56 AST
+Version-Timestamp: 2026-11-10 08:56:06 AST
 """
 
 from __future__ import annotations
@@ -33,8 +33,8 @@ def test_review_requires_local_entitlement_confirmation():
     assert "pending" in module.routing(profile, machine)["code_design_review"]
     profile.update({"opus_available": True, "fable_available": True, "claude_extra_usage_off": True})
     route = module.routing(profile, machine)
-    assert "Opus 5" in route["code_design_review"]
-    assert "Fable 5.1" in route["complex_review"]
+    assert "pending" in route["code_design_review"]
+    assert "pending" in route["complex_review"]
     profile["subscriptions"]["claude"] = False
     assert "pending" in module.routing(profile, machine)["complex_review"]
 
@@ -183,7 +183,7 @@ def test_apply_creates_reversible_local_outputs_and_does_not_overwrite_user_rule
         assert result.returncode == 0, result.stderr
         assert "# Existing user instructions" in codex_agents.read_text()
         assert "IDE-CONFIG-TEMPLATE:START" in codex_agents.read_text()
-        assert "Astra, Low effort, Standard speed" in codex_agents.read_text()
+        assert "Astra" in codex_agents.read_text()
         assert (home / ".claude" / "CLAUDE.md").is_file()
         assert (workspace / ".cursor" / "rules" / "ide-config-template.mdc").is_file()
         manual = home / ".ide-config" / "manual"
@@ -278,7 +278,6 @@ def test_sol_access_does_not_declare_astra_and_disabled_profile_is_quiet():
     plan={"recommended_skills":[],"routing":module.routing(profile,{"recommended_local_tier":"none"})}
     for text in [module.compact_instruction(profile,plan),module.web_instruction(profile,plan,"ChatGPT")]:
         assert "App implementation:" not in text
-        assert "Opus 5.5" not in text
         assert "Sonnet 5.5" not in text
 
 
@@ -296,7 +295,7 @@ def test_disabled_app_guidance_absent_from_persisted_outputs_and_pending_substit
         outputs=[preview.stdout,(home/'.ide-config/plan.json').read_text(),
                  (home/'.ide-config/manual/task-routing-guide.md').read_text()]
         for text in outputs:
-            for term in ('Opus 5.5','Sonnet 5.5','app_verification','app_implementation'):
+            for term in ('Sonnet 5.5','app_verification','app_implementation'):
                 assert term not in text
         profile['app_quality_first']=True
         route=module.routing(profile,machine)
@@ -351,6 +350,26 @@ def test_app_guidance_reaches_ide_and_web_without_privacy_override():
         assert not re.search(r"/Users/|/private/var/|[A-Za-z]:\\Users\\|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", text)
         for private_term in ("private-client-evidence", "personal-account-receipt", "ANTHROPIC_API_KEY", "api_key"):
             assert private_term not in text
+
+
+def test_current_general_routes_require_exact_access_and_do_not_activate_candidates():
+    module = wizard_module()
+    machine = {"recommended_local_tier": "none"}
+    profile = {"subscriptions": {"chatgpt": True, "claude": True}, "astra_available": True,
+               "fable_available": True, "opus_available": True, "claude_extra_usage_off": True}
+    route = module.routing(profile, machine)
+    assert "GPT-6.1 Sol Low" not in route["substantial_work"]
+    assert "pending" in route["code_design_review"]
+    profile.update(sol_current_available=True, opus_current_available=True)
+    route = module.routing(profile, machine)
+    assert "GPT-6.1 Sol Low" in route["substantial_work"]
+    assert "Standard" in route["substantial_work"]
+    assert "Terra 6.1 Low" in route["routine_work"]
+    assert "Luna 6 Low" in route["routine_work"]
+    assert "claude-opus-5-5" in route["code_design_review"]
+    assert "candidate" in route["complex_review"].lower()
+    assert "Fable 5.2" in route["complex_review"]
+    assert "approval" in route["review_evidence"].lower()
 
 
 if __name__ == "__main__":

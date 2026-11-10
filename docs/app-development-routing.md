@@ -1,6 +1,6 @@
 # Quality-first web and mobile app guidance
 
-Version-Timestamp: 2026-10-05 19:39:56 AST
+Version-Timestamp: 2026-11-10 08:56:06 AST
 
 The wizard generates instructions, not an executable router. It does not install
 `llm-route`, a Claude runner, model selectors, accounts, quotas or paid services.
@@ -23,7 +23,7 @@ pending or a confirmed Astra route; no declaration is inferred from subscription
 ownership. Strict schema rejects unknown fields and non-boolean access values.
 The fixed fields refer to GPT-6.1 Sol and `claude-opus-5-5`, not arbitrary model IDs.
 Legacy `opus_available` continues to refer to Opus 5 and cannot authorize Opus 5.5.
-General synthesis keeps the existing Fable/Opus guidance. The app profile adds a
+General independent review uses verified Opus 5.5 after privacy and billing checks; Fable 5.2 remains a candidate only. The app profile adds a
 separate app-code recommendation and does not migrate legacy declarations.
 
 Verify exact subscription execution through the intended current client before

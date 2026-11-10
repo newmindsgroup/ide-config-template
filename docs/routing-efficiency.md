@@ -1,6 +1,6 @@
 # Efficient routing on your computer
 
-Version-Timestamp: 2026-10-05 19:39:56 AST
+Version-Timestamp: 2026-11-10 08:56:06 AST
 
 ## Selective prompt refinement and planning
 
@@ -12,9 +12,9 @@ Recommend Plan mode for unresolved consequential decisions, broad cross-system c
 
 Resolve consequential decisions with the user before execution, regardless of mode. Neither refinement nor planning automatically raises effort, calls another model or replaces real checks. These are agent-followed rules, not a guaranteed runtime interceptor.
 
-The wizard recommends Astra Low and Standard only when you confirm access. Raise effort when task difficulty, failed attempts or consequence justify it. Availability and subscriptions are destination-specific.
+The everyday recommendation is GPT-6.1 Sol Low at Standard speed only after confirming access in the exact client. Luna 6 Low is for narrow hosted work. Terra 6.1 Low is a candidate for scoped screen, writing and code fixes. Verify access before use. Astra Medium suits complex work and Astra High sensitive work when access is confirmed.
 
-With confirmed included Claude access and extra usage disabled, prefer Fable 5.1 Medium for substantial bounded synthesis, High for complex/consequential work, and Opus 5 for smaller focused reviews. Use one reviewer at a meaningful milestone, a second attempt only for justified new evidence, and stop on persistent failure. These are generated instructions, not executable counters or automatic provider switching.
+After exact access, included billing and project-specific privacy checks, use Opus 5.5 Medium for focused independent review and High for complex or consequential review. Fable 5.2 is a candidate only and is not activated. Use one reviewer at a meaningful milestone, a second attempt only for justified new evidence, and stop on persistent failure. These are generated instructions, not executable counters or automatic provider switching.
 
 Keep essential safety, privacy, brand and validation rules. Move specialized recipes into clearly scoped skills loaded only when relevant. Save approved plans, decisions, checks and next steps in project files. Never store credentials or upload private plans to a new service without approval.
 
