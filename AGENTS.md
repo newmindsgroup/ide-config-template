@@ -68,8 +68,7 @@ Never copy personal receipts or client evidence into this public repository.
 - Prefer an existing skill or agent over improvising. If a capability gap appears, suggest the `find-skills` skill to look for an installable one.
 - When a slash command would serve me better than a chat request (e.g. `/code-review`, `/security-review`), name it so I can reach for it next time.
 
-### Design evidence feedback loop
-- Use approved project evidence, direction and handoff methods. Record feedback source, outcome and checks in the project's work packet. Keep client evidence local. Promote shared methods only after repeated, verified results.
+- **Design evidence feedback loop:** Use approved project evidence, direction and handoff methods. Record feedback source, outcome and checks in the project's work packet. Keep client evidence local. Promote shared methods only after repeated, verified results. A working rule, not autonomous action.
 
 ### Qualifying Questions Protocol
 - For work where the answers would meaningfully change the result — design, UI/UX, app & web development, architecture, data modeling, marketing, anything open-ended — ask 2–4 sharp qualifying questions **before** producing output (audience, platform, constraints, success criteria, existing assets, scope).
